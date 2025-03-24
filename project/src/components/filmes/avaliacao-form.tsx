@@ -11,28 +11,28 @@ export function AvaliacaoForm({
 }: {
     filmeId: number;
     avaliacao?: {
-        ID_FILME: number;
-        USERNAME: string;
-        NOTA: number;
-        DESCRICAO: string;
+        id_filme: number;
+        username: string;
+        nota: number;
+        descricao: string;
     };
     onSubmit: (data: {
-        ID_FILME: number;
-        USERNAME: string;
-        NOTA: number;
-        DESCRICAO: string;
+        id_filme: number;
+        username: string;
+        nota: number;
+        descricao: string;
     }) => Promise<void>;
 }) {
-    const [nota, setNota] = useState(avaliacao ? avaliacao.NOTA : 0);
-    const [descricao, setDescricao] = useState(
-        avaliacao ? avaliacao.DESCRICAO : ''
+    const [nota, setnota] = useState(avaliacao ? avaliacao.nota : 0);
+    const [descricao, setdescricao] = useState(
+        avaliacao ? avaliacao.descricao : ''
     );
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (avaliacao) {
-            setNota(avaliacao.NOTA);
-            setDescricao(avaliacao.DESCRICAO);
+            setnota(avaliacao.nota);
+            setdescricao(avaliacao.descricao);
         }
     }, [avaliacao]);
 
@@ -42,10 +42,10 @@ export function AvaliacaoForm({
 
         try {
             await onSubmit({
-                ID_FILME: filmeId,
-                NOTA: nota,
-                DESCRICAO: descricao,
-                USERNAME: avaliacao ? avaliacao.USERNAME : ''
+                id_filme: filmeId,
+                nota: nota,
+                descricao: descricao,
+                username: avaliacao ? avaliacao.username : ''
             });
         } finally {
             setIsSubmitting(false);
@@ -53,7 +53,7 @@ export function AvaliacaoForm({
     };
 
     const handleStarClick = (value: number) => {
-        setNota(value);
+        setnota(value);
     };
 
     const renderStars = () => {
@@ -89,7 +89,7 @@ export function AvaliacaoForm({
                         max="10"
                         step="0.5"
                         value={nota}
-                        onChange={(e) => setNota(parseFloat(e.target.value))}
+                        onChange={(e) => setnota(parseFloat(e.target.value))}
                         className="w-full"
                     />
                 </div>
@@ -97,7 +97,7 @@ export function AvaliacaoForm({
                 <Textarea
                     placeholder="Escreva sua avaliação (opcional)"
                     value={descricao}
-                    onChange={(e) => setDescricao(e.target.value)}
+                    onChange={(e) => setdescricao(e.target.value)}
                     className="mb-4"
                     rows={5}
                 />

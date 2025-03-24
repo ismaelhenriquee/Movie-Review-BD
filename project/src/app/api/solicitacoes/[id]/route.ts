@@ -83,7 +83,7 @@ export async function POST(
 
         try {
             const filmeResult = await pool.query(
-                'INSERT INTO Filme(NOME, ANO, DURACAO, GENERO, SINOPSE, DIRETOR, IDIOMA) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING ID_FILME',
+                'INSERT INTO Filme(NOME, ANO, DURACAO, GENERO, SINOPSE, DIRETOR, IDIOMA, IMAGEM) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING ID_FILME',
                 [
                     solicitacaoResult.rows[0].nome,
                     solicitacaoResult.rows[0].ano,
@@ -91,7 +91,9 @@ export async function POST(
                     solicitacaoResult.rows[0].genero,
                     solicitacaoResult.rows[0].sinopse,
                     solicitacaoResult.rows[0].diretor,
-                    solicitacaoResult.rows[0].idioma
+                    solicitacaoResult.rows[0].idioma,
+                    solicitacaoResult.rows[0].imagem ||
+                        'https://placeholder.com/movie'
                 ]
             );
             const filmId = filmeResult.rows[0].id_filme;

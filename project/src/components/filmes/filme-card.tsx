@@ -25,17 +25,17 @@ export function FilmeCard({
     refetch
 }: {
     filme: {
-        NOME: string;
-        ANO: number;
-        ID_FILME: number;
-        DURACAO: number;
+        nome: string;
+        ano: number;
+        id_filme: number;
+        duracao: number;
         Tags: { TAG: string }[];
-        GENERO: string;
-        SINOPSE: string;
+        genero: string;
+        sinopse: string;
         DIRETOR: string;
         IDIOMA: string;
-        NOTA_AGREGADA: number;
-        IMAGEM: string;
+        nota_agregada: string;
+        imagem: string;
         IsWatched: boolean;
         IsFavorite: boolean;
         IsWatchlist: boolean;
@@ -50,12 +50,13 @@ export function FilmeCard({
     const router = useRouter();
 
     const formatarNota = (nota: number) => {
-        return nota.toFixed(1);
+        return nota
     };
 
-    const getNotaColor = (nota: number) => {
-        if (nota >= 7.5) return 'text-green-500';
-        if (nota >= 5) return 'text-yellow-500';
+    const getNotaColor = (nota: string) => {
+        const notaNumber = parseFloat(nota);
+        if (notaNumber >= 7.5) return 'text-green-500';
+        if (notaNumber >= 5) return 'text-yellow-500';
         return 'text-red-500';
     };
     async function toggleReaction(
@@ -67,7 +68,7 @@ export function FilmeCard({
             {
                 type: type,
                 username: user.username,
-                filmeId: Number(filme.ID_FILME),
+                filmeId: Number(filme.id_filme),
                 active: active
             },
             {
@@ -128,7 +129,7 @@ export function FilmeCard({
     };
 
     const handleCardClick = () => {
-        router.push(`/filmes/${filme.ID_FILME}`);
+        router.push(`/filmes/${filme.id_filme}`);
     };
 
     return (
@@ -139,37 +140,37 @@ export function FilmeCard({
             <CardHeader className="p-4 pb-0">
                 <div className="relative w-full h-40 bg-gray-200 rounded-md mb-2">
                     <img
-                        src={filme.IMAGEM}
-                        alt={filme.NOME}
+                        src={filme.imagem}
+                        alt={filme.nome}
                         className="w-full h-full object-cover rounded-md"
                     />
                     <div className="absolute top-2 right-2 bg-black bg-opacity-70 text-white p-1 rounded flex items-center">
                         <Star className="h-4 w-4 text-yellow-400 mr-1" />
                         <span
-                            className={`text-sm font-bold ${getNotaColor(filme.NOTA_AGREGADA)}`}
+                            className={`text-sm font-bold ${getNotaColor(filme.nota_agregada)}`}
                         >
-                            {formatarNota(filme.NOTA_AGREGADA)}
+                            {(filme?.nota_agregada || 0)}
                         </span>
                     </div>
                 </div>
                 <h3
                     className="font-bold text-lg truncate"
-                    title={filme.NOME}
+                    title={filme.nome}
                 >
-                    {filme.NOME}
+                    {filme.nome}
                 </h3>
                 <div className="flex items-center text-gray-500 text-sm">
-                    <span>{filme.ANO}</span>
+                    <span>{filme.ano}</span>
                     <span className="mx-2">•</span>
                     <span>
-                        {Math.floor(filme.DURACAO / 60)}h {filme.DURACAO % 60}
+                        {Math.floor(filme.duracao / 60)}h {filme.duracao % 60}
                         min
                     </span>
                 </div>
             </CardHeader>
             <CardContent className="p-4">
                 <div className="flex flex-wrap gap-1 mb-2">
-                    <Badge variant="secondary">{filme.GENERO}</Badge>
+                    <Badge variant="secondary">{filme.genero}</Badge>
                     {filme.Tags &&
                         filme.Tags.slice(0, 2).map((tag) => (
                             <Badge
@@ -187,9 +188,9 @@ export function FilmeCard({
                 </div>
                 <p
                     className="text-sm text-gray-600 line-clamp-2"
-                    title={filme.SINOPSE}
+                    title={filme.sinopse}
                 >
-                    {filme.SINOPSE}
+                    {filme.sinopse}
                 </p>
             </CardContent>
             <CardFooter className="p-4 pt-0 flex justify-between">

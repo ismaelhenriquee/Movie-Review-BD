@@ -30,17 +30,17 @@ export function FilmeGrid() {
 
     async function getMovies(): Promise<{
         data: {
-            NOME: string;
-            ANO: number;
-            ID_FILME: number;
-            DURACAO: number;
+            nome: string;
+            ano: number;
+            id_filme: number;
+            duracao: number;
             Tags: { TAG: string }[];
-            GENERO: string;
-            SINOPSE: string;
+            genero: string;
+            sinopse: string;
             DIRETOR: string;
             IDIOMA: string;
-            NOTA_AGREGADA: number;
-            IMAGEM: string;
+            nota_agregada: number;
+            imagem: string;
             IsWatched: boolean;
             IsFavorite: boolean;
             IsWatchlist: boolean;
@@ -363,7 +363,7 @@ export function FilmeGrid() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         {data?.data.map((filme) => (
                             <FilmeCard
-                                key={filme.ID_FILME}
+                                key={filme.id_filme}
                                 filme={filme}
                                 refetch={refetch}
                                 user={{

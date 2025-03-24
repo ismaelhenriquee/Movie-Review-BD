@@ -23,10 +23,10 @@ export async function POST(
             );
         }
 
-        const { USERNAME, NOTA, DESCRICAO, ID_FILME } = await request.json();
+        const { username, nota, descricao, id_filme } = await request.json();
         const filmeId = parseInt(params.id);
 
-        if (ID_FILME !== filmeId) {
+        if (id_filme !== filmeId) {
             return NextResponse.json(
                 {
                     error: 'ID do filme na URL não corresponde ao ID no corpo da requisição'
@@ -35,14 +35,14 @@ export async function POST(
             );
         }
 
-        if (USERNAME !== userAuth.username) {
+        if (username !== userAuth.username) {
             return NextResponse.json(
                 { error: 'Não autorizado' },
                 { status: 403 }
             );
         }
 
-        if (NOTA < 0 || NOTA > 10) {
+        if (nota < 0 || nota > 10) {
             return NextResponse.json(
                 { error: 'A nota deve estar entre 0 e 10' },
                 { status: 400 }
@@ -54,7 +54,7 @@ export async function POST(
       SELECT * FROM Avaliacao
       WHERE ID_FILME = $1 AND USERNAME = $2
     `,
-            [filmeId, USERNAME]
+            [filmeId, username]
         );
 
         if (existingReview.rows.length > 0) {
@@ -64,7 +64,7 @@ export async function POST(
         SET NOTA = $1, DESCRICAO = $2
         WHERE ID_FILME = $3 AND USERNAME = $4
       `,
-                [NOTA, DESCRICAO, filmeId, USERNAME]
+                [nota, descricao, filmeId, username]
             );
         } else {
             await pool.query(
@@ -72,7 +72,7 @@ export async function POST(
         INSERT INTO Avaliacao (ID_FILME, USERNAME, NOTA, DESCRICAO)
         VALUES ($1, $2, $3, $4)
       `,
-                [filmeId, USERNAME, NOTA, DESCRICAO]
+                [filmeId, username, nota, descricao]
             );
 
             await pool.query(
@@ -81,7 +81,7 @@ export async function POST(
         VALUES ($1, $2)
         ON CONFLICT (ID_FILME, USERNAME) DO NOTHING
       `,
-                [filmeId, USERNAME]
+                [filmeId, username]
             );
         }
 

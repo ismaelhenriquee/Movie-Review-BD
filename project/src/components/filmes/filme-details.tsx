@@ -19,41 +19,41 @@ import { useAuth } from '@/contexts/auth-context';
 
 interface fetchFilmeResponse {
     filme: {
-        NOME: string;
-        ANO: number;
-        ID_FILME: number;
-        DURACAO: number;
+        nome: string;
+        ano: number;
+        id_filme: number;
+        duracao: number;
         Tags: { TAG: string }[];
-        GENERO: string;
-        SINOPSE: string;
-        DIRETOR: string;
-        IDIOMA: string;
-        NOTA_AGREGADA: number;
-        IMAGEM: string;
+        genero: string;
+        sinopse: string;
+        diretor: string;
+        idioma: string;
+        nota_agregada: string;
+        imagem: string;
         IsWatched: boolean;
         IsFavorite: boolean;
         IsWatchlist: boolean;
     };
     avaliacoes: {
-        USERNAME: string;
-        NOTA: number;
-        DESCRICAO: string;
-        DATA_REVIEW: string;
+        username: string;
+        nota: number;
+        descricao: string;
+        data_review: string;
     }[];
     membros: {
-        NOME: string;
+        nome: string;
         CARGO: string;
     }[];
     userAvaliacion: {
-        USERNAME: string;
-        NOTA: number;
-        DESCRICAO: string;
-        DATA_REVIEW: string;
+        username: string;
+        nota: number;
+        descricao: string;
+        data_review: string;
     };
 }
 
 export function FilmeDetails() {
-    const {user} = useAuth();
+    const { user } = useAuth();
     const { id } = useParams();
     const router = useRouter();
     const { toast } = useToast();
@@ -65,55 +65,14 @@ export function FilmeDetails() {
                 Authorization: `Bearer ${localStorage.getItem('token')}`
             }
         });
+        console.log(data)
         return data;
     }
 
     const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['filme', id],
         queryFn: fetchFilme,
-        initialData: {
-            filme: {
-                NOME: 'A Cidade Perdida',
-                ANO: 2023,
-                IMAGEM: 'https://www.themoviedb.org/t/p/w500/7q5Z1X0s6j8K5K4t3fK5fG2x1Vd.jpg',
-                ID_FILME: 1,
-                DURACAO: 112,
-                Tags: [{ TAG: 'Aventura' }, { TAG: 'Comédia' }],
-                GENERO: 'Aventura',
-                SINOPSE:
-                    'Uma romancista de aventura é sequestrada por um bilionário excêntrico enquanto promovia seu novo livro, e um modelo de capa de livro se vê obrigado a resgatá-la.',
-                DIRETOR: 'Aaron Nee',
-                IDIOMA: 'Inglês',
-                NOTA_AGREGADA: 7.5,
-                IsWatched: false,
-                IsFavorite: false,
-                IsWatchlist: false
-            },
-            avaliacoes: [
-                {
-                    USERNAME: 'Lucas',
-                    NOTA: 8,
-                    DESCRICAO: 'Ótimo filme!',
-                    DATA_REVIEW: '2023-10-01'
-                }
-            ],
-            membros: [
-                {
-                    NOME: 'Sandra Bullock',
-                    CARGO: 'Atriz Principal'
-                },
-                {
-                    NOME: 'Channing Tatum',
-                    CARGO: 'Ator Principal'
-                }
-            ],
-            userAvaliacion: {
-                USERNAME: 'Lucas',
-                NOTA: 8,
-                DESCRICAO: 'Ótimo filme!',
-                DATA_REVIEW: '2023-10-01'
-            }
-        }
+        enabled: !!id,
     });
     async function toggleReaction(
         active: boolean,
@@ -170,8 +129,7 @@ export function FilmeDetails() {
             return;
         }
         try {
-            const key =
-                `Is${type.charAt(0).toUpperCase() + type.slice(1)}` as keyof typeof data.filme;
+            const key = `Is${type.charAt(0).toUpperCase() + type.slice(1)}` as keyof fetchFilmeResponse['filme'];
             const isActive = data?.filme[key];
             await toogleMutation.mutateAsync({
                 active: !isActive,
@@ -183,16 +141,16 @@ export function FilmeDetails() {
     };
 
     const mutateAvaliacao = async (avaliacao: {
-        USERNAME: string;
-        NOTA: number;
-        DESCRICAO: string;
+        username: string;
+        nota: number;
+        descricao: string;
     }) => {
         await axios.post(
             `/api/filmes/${id}/avaliacoes`,
             {
                 ...avaliacao,
-                ID_FILME: Number(id),
-                USERNAME: user?.username
+                id_filme: Number(id),
+                username: user?.username
             },
             {
                 headers: {
@@ -220,16 +178,16 @@ export function FilmeDetails() {
     });
 
     const handleSubmitAvaliacao = async (avaliacao: {
-        ID_FILME: number;
-        USERNAME: string;
-        NOTA: number;
-        DESCRICAO: string;
+        id_filme: number;
+        username: string;
+        nota: number;
+        descricao: string;
     }) => {
         try {
             submitAvaliacao({
-                USERNAME: user?.username || '',
-                NOTA: avaliacao.NOTA,
-                DESCRICAO: avaliacao.DESCRICAO
+                username: user?.username || '',
+                nota: avaliacao.nota,
+                descricao: avaliacao.descricao
             });
         } catch (err) {
             console.error('Erro ao salvar a avaliação:', err);
@@ -277,13 +235,15 @@ export function FilmeDetails() {
                 <div className="col-span-1">
                     <Avatar className="bg-gray-200 w-full h-96 rounded-lg mb-4">
                         <AvatarImage
-                            src={data?.filme?.IMAGEM}
-                            alt={data?.filme?.NOME}
+                            src={data?.filme?.imagem}
+                            alt={data?.filme?.nome}
                             className="w-full h-full object-cover rounded-lg"
                         />
-                        <AvatarFallback>{data?.filme.NOME}</AvatarFallback>
+                        <AvatarFallback>{data?.filme.nome}</AvatarFallback>
                     </Avatar>
 
+                           
+                       {user && !user.isAdmin && ( 
                     <div className="flex gap-2 mb-4">
                         <Button
                             variant={
@@ -309,6 +269,8 @@ export function FilmeDetails() {
                             {data?.filme?.IsFavorite ? 'Favorito' : 'Favoritar'}
                         </Button>
                     </div>
+ )}
+                        {user && !user.isAdmin && ( 
 
                     <Button
                         variant={data?.filme?.IsWatched ? 'default' : 'outline'}
@@ -321,18 +283,19 @@ export function FilmeDetails() {
                             : 'Marcar como assistido'}
                     </Button>
 
+                    )}
                     <div className="bg-gray-100 p-4 rounded-lg">
                         <h3 className="font-semibold mb-2">Informações</h3>
                         <dl className="space-y-2">
                             <div>
                                 <dt className="text-sm text-gray-500">
-                                    Diretor
+                                    diretor
                                 </dt>
-                                <dd>{data?.filme.DIRETOR}</dd>
+                                <dd>{data?.filme.diretor}</dd>
                             </div>
                             <div>
-                                <dt className="text-sm text-gray-500">Ano</dt>
-                                <dd>{data?.filme.ANO}</dd>
+                                <dt className="text-sm text-gray-500">ano</dt>
+                                <dd>{data?.filme.ano}</dd>
                             </div>
                             <div>
                                 <dt className="text-sm text-gray-500">
@@ -340,22 +303,22 @@ export function FilmeDetails() {
                                 </dt>
                                 <dd>
                                     {Math.floor(
-                                        (data?.filme.DURACAO || 0) / 60
+                                        (data?.filme.duracao || 0) / 60
                                     )}
-                                    h {(data?.filme.DURACAO || 0) % 60}min
+                                    h {(data?.filme.duracao || 0) % 60}min
                                 </dd>
                             </div>
                             <div>
                                 <dt className="text-sm text-gray-500">
-                                    Idioma
+                                    idioma
                                 </dt>
-                                <dd>{data?.filme.IDIOMA}</dd>
+                                <dd>{data?.filme.idioma}</dd>
                             </div>
                             <div>
                                 <dt className="text-sm text-gray-500">
                                     Gênero
                                 </dt>
-                                <dd>{data?.filme.GENERO}</dd>
+                                <dd>{data?.filme.genero}</dd>
                             </div>
                             <div>
                                 <dt className="text-sm text-gray-500">Tags</dt>
@@ -379,13 +342,13 @@ export function FilmeDetails() {
                     <div className="flex items-start justify-between mb-2">
                         <div>
                             <h1 className="text-3xl font-bold">
-                                {data?.filme.NOME}
+                                {data?.filme.nome}
                             </h1>
                             <div className="flex items-center mt-1">
                                 <div className="flex items-center mr-4">
                                     <Star className="h-5 w-5 text-yellow-400 mr-1" />
                                     <span className="font-bold text-lg">
-                                        {data?.filme.NOTA_AGREGADA.toFixed(1)}
+                                        {data?.filme.nota_agregada}
                                     </span>
                                     <span className="text-gray-500 ml-1">
                                         / 10
@@ -400,19 +363,10 @@ export function FilmeDetails() {
                             </div>
                         </div>
 
-                        {user && user.isAdmin && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setOpen(true)}
-                            >
-                                <Edit className="mr-2 h-4 w-4" />
-                                Editar filme
-                            </Button>
-                        )}
+                       
                     </div>
 
-                    <p className="text-gray-700 mb-6">{data?.filme.SINOPSE}</p>
+                    <p className="text-gray-700 mb-6">{data?.filme.sinopse}</p>
 
                     <Tabs
                         defaultValue="avaliacoes"
@@ -431,7 +385,7 @@ export function FilmeDetails() {
                             value="avaliacoes"
                             className="space-y-6"
                         >
-                            {user && (
+                            {user && !user?.isAdmin &&(
                                 <>
                                     <div className="mb-6">
                                         <h3 className="text-lg font-semibold mb-2">
@@ -440,14 +394,14 @@ export function FilmeDetails() {
                                         <AvaliacaoForm
                                             filmeId={Number(id)}
                                             avaliacao={{
-                                                ID_FILME: Number(id),
-                                                USERNAME: user?.username,
-                                                NOTA:
-                                                    data?.userAvaliacion.NOTA ||
+                                                id_filme: Number(id),
+                                                username: user?.username,
+                                                nota:
+                                                    data?.userAvaliacion?.nota ||
                                                     0,
-                                                DESCRICAO:
-                                                    data?.userAvaliacion
-                                                        .DESCRICAO || ''
+                                                descricao:
+                                                    (data?.userAvaliacion?
+                                                        .descricao || '')
                                             }}
                                             onSubmit={handleSubmitAvaliacao}
                                         />
@@ -467,28 +421,26 @@ export function FilmeDetails() {
                                 <div className="space-y-4">
                                     {data?.avaliacoes.map((avaliacao) => (
                                         <Card
-                                            key={avaliacao.USERNAME}
+                                            key={avaliacao.username}
                                             className="p-4"
                                         >
                                             <div className="flex justify-between mb-2">
                                                 <div className="font-semibold">
-                                                    {avaliacao.USERNAME}
+                                                    {avaliacao.username}
                                                 </div>
                                                 <div className="flex items-center">
                                                     <Star className="h-4 w-4 text-yellow-400 mr-1" />
                                                     <span>
-                                                        {avaliacao.NOTA.toFixed(
-                                                            1
-                                                        )}
+                                                        {avaliacao.nota}
                                                     </span>
                                                 </div>
                                             </div>
                                             <p className="text-gray-700">
-                                                {avaliacao.DESCRICAO}
+                                                {avaliacao.descricao}
                                             </p>
                                             <div className="text-gray-500 text-sm mt-2">
                                                 {new Date(
-                                                    avaliacao.DATA_REVIEW
+                                                    avaliacao.data_review
                                                 ).toLocaleDateString()}
                                             </div>
                                         </Card>
@@ -507,17 +459,16 @@ export function FilmeDetails() {
                                         <Card className="p-4 flex flex-col items-center">
                                             <Avatar className="w-20 h-20 rounded-full bg-gray-200 mb-2">
                                                 <AvatarFallback>
-                                                    {data?.filme.DIRETOR.substring(
-                                                        0,
-                                                        2
-                                                    ).toUpperCase()}
+                                                    {data?.filme.diretor
+                                                        .substring(0, 2)
+                                                        .toUpperCase()}
                                                 </AvatarFallback>
                                             </Avatar>
                                             <div className="font-semibold text-center">
-                                                {data?.filme.DIRETOR}
+                                                {data?.filme.diretor}
                                             </div>
                                             <div className="text-gray-500 text-sm text-center">
-                                                Diretor
+                                                diretor
                                             </div>
                                         </Card>
                                     </div>
@@ -536,24 +487,23 @@ export function FilmeDetails() {
                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                             {data?.membros.map((membro) => (
                                                 <Card
-                                                    key={`${membro.NOME}-${membro.CARGO}`}
+                                                    key={`${membro.nome}-${membro.CARGO}`}
                                                     className="p-4 flex flex-col items-center"
                                                 >
                                                     <Avatar className="w-20 h-20 rounded-full bg-gray-200 mb-2">
                                                         <AvatarImage
-                                                            src={`/api/placeholder/80/80?text=${encodeURIComponent(membro.NOME[0])}`}
-                                                            alt={membro.NOME}
+                                                            src={`/api/placeholder/80/80?text=${encodeURIComponent(membro.nome[0])}`}
+                                                            alt={membro.nome}
                                                             className="w-full h-full object-cover rounded-full"
                                                         />
                                                         <AvatarFallback>
-                                                            {membro.NOME.substring(
-                                                                0,
-                                                                2
-                                                            ).toUpperCase()}
+                                                            {membro.nome
+                                                                .substring(0, 2)
+                                                                .toUpperCase()}
                                                         </AvatarFallback>
                                                     </Avatar>
                                                     <div className="font-semibold text-center">
-                                                        {membro.NOME}
+                                                        {membro.nome}
                                                     </div>
                                                     <div className="text-gray-500 text-sm text-center">
                                                         {membro.CARGO}

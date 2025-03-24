@@ -207,9 +207,7 @@ export function SolicitationDetails() {
                             <TabsTrigger value="solicitation">
                                 Solicitação
                             </TabsTrigger>
-                            <TabsTrigger value="elenco">
-                                Elenco
-                            </TabsTrigger>
+                            <TabsTrigger value="elenco">Elenco</TabsTrigger>
                         </TabsList>
 
                         <TabsContent
@@ -241,11 +239,7 @@ export function SolicitationDetails() {
                                         Duração
                                     </dt>
                                     <dd>
-                                        {Math.floor(
-                                            (data?.duracao || 0) /
-                                                60
-                                        )}
-                                        h{' '}
+                                        {Math.floor((data?.duracao || 0) / 60)}h{' '}
                                         {(data?.duracao || 0) % 60}
                                         min
                                     </dd>
@@ -269,16 +263,14 @@ export function SolicitationDetails() {
                                     </dt>
                                     <dd className="flex flex-wrap gap-1 mt-1">
                                         {data?.Tags &&
-                                            data?.Tags.map(
-                                                (tag) => (
-                                                    <Badge
-                                                        key={tag.TAG}
-                                                        variant="outline"
-                                                    >
-                                                        {tag.TAG}
-                                                    </Badge>
-                                                )
-                                            )}
+                                            data?.Tags.map((tag) => (
+                                                <Badge
+                                                    key={tag.TAG}
+                                                    variant="outline"
+                                                >
+                                                    {tag.TAG}
+                                                </Badge>
+                                            ))}
                                     </dd>
                                 </div>
                             </dl>
@@ -296,8 +288,8 @@ export function SolicitationDetails() {
                                                 <AvatarImage
                                                     src={`/api/placeholder/80/80?text=${encodeURIComponent(data?.diretor[0] || '')}`}
                                                     alt={
-                                                        data?
-                                                            .diretor
+                                                        data?.diretor ||
+                                                        ''.diretor
                                                     }
                                                     className="w-full h-full object-cover rounded-full"
                                                 />
@@ -316,8 +308,6 @@ export function SolicitationDetails() {
                                         </Card>
                                     </div>
                                 </div>
-
-                              
                             </div>
                         </TabsContent>
                     </Tabs>
