@@ -1,5 +1,4 @@
 'use client';
-import { useState } from 'react';
 import {
     Card,
     CardContent,
@@ -16,10 +15,14 @@ import {
     TooltipTrigger
 } from '@/components/ui/tooltip';
 import { useRouter } from 'next/navigation';
+import axios from 'axios';
+import { useMutation } from '@tanstack/react-query';
+import { toast } from '@/hooks/use-toast';
 
 export function FilmeCard({
     filme,
-    user
+    user,
+    refetch
 }: {
     filme: {
         NOME: string;
@@ -32,6 +35,10 @@ export function FilmeCard({
         DIRETOR: string;
         IDIOMA: string;
         NOTA_AGREGADA: number;
+        IMAGEM: string;
+        IsWatched: boolean;
+        IsFavorite: boolean;
+        IsWatchlist: boolean;
     };
     user: {
         username: string;
@@ -39,100 +46,85 @@ export function FilmeCard({
         ID_USUARIO: number;
         senha: string;
     };
+    refetch?: () => void;
 }) {
     const router = useRouter();
 
-    const [isWatchlist, setIsWatchlist] = useState(false);
-    const [isFavorito, setIsFavorito] = useState(false);
-    const [isAssistido, setIsAssistido] = useState(false);
-
-    // Função para formatar a nota como X.X
     const formatarNota = (nota: number) => {
         return nota.toFixed(1);
     };
 
-    // Cores baseadas na nota do filme
     const getNotaColor = (nota: number) => {
         if (nota >= 7.5) return 'text-green-500';
         if (nota >= 5) return 'text-yellow-500';
         return 'text-red-500';
     };
+    async function toggleReaction(
+        active: boolean,
+        type: 'watchlist' | 'favorite' | 'watched'
+    ): Promise<void> {
+        await axios.post(
+            `/api/filmes/reactions`,
+            {
+                type: type,
+                username: user.username,
+                filmeId: Number(filme.ID_FILME),
+                active: active
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
+            }
+        );
+    }
 
-    const toggleWatchlist = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    const toogleMutation = useMutation({
+        mutationFn: ({
+            active,
+            type
+        }: {
+            active: boolean;
+            type: 'watchlist' | 'favorite' | 'watched';
+        }) => {
+            return toggleReaction(active, type); // Chama sua função com os dois parâmetros
+        },
+        onSuccess: () => {
+            toast({
+                description: 'Reação do filme atualizada com sucesso!',
+                variant: 'default'
+            });
+            if (refetch) {
+                refetch();
+            }
+        },
+        onError: () => {
+            toast({
+                description: 'Ocorreu um erro ao atualizar a reação do filme.',
+                variant: 'destructive'
+            });
+        }
+    });
+
+    const toggleEvent = async (
+        e: React.MouseEvent<HTMLButtonElement>,
+        type: 'watchlist' | 'favorite' | 'watched'
+    ) => {
         e.stopPropagation();
         if (!user) {
             router.push('/auth/login');
             return;
         }
-
         try {
-            // Chamada para a API para adicionar/remover da watchlist
-            const endpoint = isWatchlist
-                ? `/api/filmes/${filme.ID_FILME}/watchlist/remover`
-                : `/api/filmes/${filme.ID_FILME}/watchlist/adicionar`;
-
-            await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`
-                }
+            const key =
+                `Is${type.charAt(0).toUpperCase() + type.slice(1)}` as keyof typeof filme;
+            const isActive = filme[key];
+            await toogleMutation.mutateAsync({
+                active: !isActive,
+                type: type
             });
-
-            setIsWatchlist(!isWatchlist);
         } catch (error) {
-            console.error('Erro ao atualizar watchlist:', error);
-        }
-    };
-
-    const toggleFavorito = async (e: React.MouseEvent<HTMLButtonElement>) => {
-        e.stopPropagation();
-        if (!user) {
-            router.push('/auth/login');
-            return;
-        }
-
-        try {
-            // Chamada para a API para adicionar/remover dos favoritos
-            const endpoint = isFavorito
-                ? `/api/filmes/${filme.ID_FILME}/favoritos/remover`
-                : `/api/filmes/${filme.ID_FILME}/favoritos/adicionar`;
-
-            await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`
-                }
-            });
-
-            setIsFavorito(!isFavorito);
-        } catch (error) {
-            console.error('Erro ao atualizar favoritos:', error);
-        }
-    };
-
-    const toggleAssistido = async (e: React.MouseEvent<HTMLButtonElement>) => {
-        e.stopPropagation();
-        if (!user) {
-            router.push('/auth/login');
-            return;
-        }
-
-        try {
-            // Chamada para a API para adicionar/remover dos assistidos
-            const endpoint = isAssistido
-                ? `/api/filmes/${filme.ID_FILME}/assistidos/remover`
-                : `/api/filmes/${filme.ID_FILME}/assistidos/adicionar`;
-
-            await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`
-                }
-            });
-
-            setIsAssistido(!isAssistido);
-        } catch (error) {
-            console.error('Erro ao atualizar assistidos:', error);
+            console.error('Erro ao atualizar a reação do filme:', error);
         }
     };
 
@@ -148,7 +140,7 @@ export function FilmeCard({
             <CardHeader className="p-4 pb-0">
                 <div className="relative w-full h-40 bg-gray-200 rounded-md mb-2">
                     <img
-                        src={`https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSktqj-xOwVJNFfDLnVyBaO1m-1N4CkmpvYaw&s`}
+                        src={filme.IMAGEM}
                         alt={filme.NOME}
                         className="w-full h-full object-cover rounded-md"
                     />
@@ -206,16 +198,18 @@ export function FilmeCard({
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button
-                                variant={isWatchlist ? 'default' : 'outline'}
+                                variant={
+                                    filme.IsWatchlist ? 'default' : 'outline'
+                                }
                                 size="icon"
-                                onClick={toggleWatchlist}
+                                onClick={(e) => toggleEvent(e, 'watchlist')}
                             >
                                 <Clock className="h-4 w-4" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
                             <p>
-                                {isWatchlist
+                                {filme.IsWatchlist
                                     ? 'Remover da watchlist'
                                     : 'Adicionar à watchlist'}
                             </p>
@@ -227,16 +221,18 @@ export function FilmeCard({
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button
-                                variant={isFavorito ? 'default' : 'outline'}
+                                variant={
+                                    filme.IsFavorite ? 'default' : 'outline'
+                                }
                                 size="icon"
-                                onClick={toggleFavorito}
+                                onClick={(e) => toggleEvent(e, 'favorite')}
                             >
                                 <Heart className="h-4 w-4" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
                             <p>
-                                {isFavorito
+                                {filme.IsFavorite
                                     ? 'Remover dos favoritos'
                                     : 'Adicionar aos favoritos'}
                             </p>
@@ -248,16 +244,18 @@ export function FilmeCard({
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button
-                                variant={isAssistido ? 'default' : 'outline'}
+                                variant={
+                                    filme.IsWatched ? 'default' : 'outline'
+                                }
                                 size="icon"
-                                onClick={toggleAssistido}
+                                onClick={(e) => toggleEvent(e, 'watched')}
                             >
                                 <Eye className="h-4 w-4" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
                             <p>
-                                {isAssistido
+                                {filme.IsWatched
                                     ? 'Remover dos assistidos'
                                     : 'Marcar como assistido'}
                             </p>

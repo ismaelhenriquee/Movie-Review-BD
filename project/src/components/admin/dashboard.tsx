@@ -1,5 +1,4 @@
 'use client';
-import { useState, useEffect } from 'react';
 import {
     Card,
     CardContent,
@@ -7,18 +6,8 @@ import {
     CardHeader,
     CardTitle
 } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import {
-    Film,
-    Users,
-    Star,
-    Clock,
-    Heart,
-    FileText,
-    Plus,
-    ChevronRight
-} from 'lucide-react';
+import { Film, Users, Star, FileText, Plus, ChevronRight } from 'lucide-react';
 import {
     Table,
     TableBody,
@@ -28,131 +17,72 @@ import {
     TableRow
 } from '@/components/ui/table';
 import { useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
+
+const fetchDashboardStats = async (): Promise<{
+    totalFilmes: number;
+    totalUsuarios: number;
+    totalAvaliacoes: number;
+    totalSolicitacoes: number;
+}> => {
+    const response = await axios.get('/api/admin/dashboard');
+    if (!response) {
+        throw new Error('Failed to fetch dashboard stats');
+    }
+    return response.data;
+};
+
+const fetchRecentRequests = async (): Promise<
+    {
+        ID_SOLICITACAO: number;
+        NOME: string;
+        ANO: number;
+        GENERO: string;
+        USERNAME: string;
+    }[]
+> => {
+    const response = await axios.get('/api/admin/solicitacoes/recentes');
+    if (!response) {
+        throw new Error('Failed to fetch recent requests');
+    }
+    return response.data;
+};
 
 export function AdminDashboard() {
-    const [stats, setStats] = useState({
+    const router = useRouter();
+
+    const {
+        data: statsData,
+        isLoading: isStatsLoading,
+        error: statsError
+    } = useQuery({
+        queryKey: ['dashboardStats'],
+        queryFn: fetchDashboardStats
+    });
+
+    const {
+        data: requestsData,
+        isLoading: isRequestsLoading,
+        error: requestsError
+    } = useQuery({
+        queryKey: ['recentRequests'],
+        queryFn: fetchRecentRequests
+    });
+
+    const isLoading = isStatsLoading || isRequestsLoading;
+    const error = statsError || requestsError;
+
+    const stats = statsData || {
         totalFilmes: 0,
         totalUsuarios: 0,
         totalAvaliacoes: 0,
         totalSolicitacoes: 0
-    });
-    const [recenteSolicitacoes, setRecenteSolicitacoes] = useState<
-        {
-            ID_SOLICITACAO: number;
-            NOME: string;
-            ANO: number;
-            GENERO: string;
-            USERNAME: string;
-        }[]
-    >([{
-        ID_SOLICITACAO: 1,
-        NOME: 'Exemplo de Filme',
-        ANO: 2023,
-        GENERO: 'Ação',
-        USERNAME: 'usuario_exemplo'
-        
-    }]);
-    const [recenteFilmes, setRecenteFilmes] = useState<
-        {
-            NOME: string;
-            ANO: number;
-            ID_FILME: number;
-            DURACAO: number;
-            Tags: { TAG: string }[];
-            GENERO: string;
-            SINOPSE: string;
-            DIRETOR: string;
-            IDIOMA: string;
-            NOTA_AGREGADA: number;
-        }[]
-    >([
-        {
-            ID_FILME: 1,
-            NOME: 'Exemplo de Filme',
-            ANO: 2023,
-            GENERO: 'Ação',
-            NOTA_AGREGADA: 8.5,
-            IDIOMA: 'Inglês',
-            DIRETOR: 'John Doe',
-            DURACAO: 120,
-            SINOPSE: 'Sinopse do filme',
-            Tags: [{ TAG: 'Tag1' }, { TAG: 'Tag2' }]
-        }
-    ]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
+    };
 
-    const router = useRouter();
-    // useEffect(() => {
-    //     const fetchDashboardData = async () => {
-    //         setLoading(true);
-    //         setError(null);
+    const recenteSolicitacoes = requestsData || [];
 
-    //         try {
-    //             // Buscar estatísticas
-    //             const statsResponse = await fetch('/api/admin/stats', {
-    //                 headers: {
-    //                     Authorization: `Bearer ${localStorage.getItem('token')}`
-    //                 }
-    //             });
-
-    //             if (!statsResponse.ok) {
-    //                 throw new Error(
-    //                     'Não foi possível carregar as estatísticas'
-    //                 );
-    //             }
-
-    //             const statsData = await statsResponse.json();
-    //             setStats(statsData);
-
-    //             // Buscar solicitações recentes
-    //             const solicitacoesResponse = await fetch(
-    //                 '/api/admin/solicitacoes/recentes',
-    //                 {
-    //                     headers: {
-    //                         Authorization: `Bearer ${localStorage.getItem('token')}`
-    //                     }
-    //                 }
-    //             );
-
-    //             if (!solicitacoesResponse.ok) {
-    //                 throw new Error(
-    //                     'Não foi possível carregar as solicitações recentes'
-    //                 );
-    //             }
-
-    //             const solicitacoesData = await solicitacoesResponse.json();
-    //             setRecenteSolicitacoes(solicitacoesData);
-
-    //             // Buscar filmes recentes
-    //             const filmesResponse = await fetch(
-    //                 '/api/admin/filmes/recentes',
-    //                 {
-    //                     headers: {
-    //                         Authorization: `Bearer ${localStorage.getItem('token')}`
-    //                     }
-    //                 }
-    //             );
-
-    //             if (!filmesResponse.ok) {
-    //                 throw new Error(
-    //                     'Não foi possível carregar os filmes recentes'
-    //                 );
-    //             }
-
-    //             const filmesData = await filmesResponse.json();
-    //             setRecenteFilmes(filmesData);
-    //         } catch (err) {
-    //             setError((err as Error).message);
-    //         } finally {
-    //             setLoading(false);
-    //         }
-    //     };
-
-    //     fetchDashboardData();
-    // }, []);
-
-    if (loading) {
+    if (isLoading) {
         return (
             <div className="flex justify-center items-center h-96">
                 <div className="text-center">
@@ -173,7 +103,7 @@ export function AdminDashboard() {
                     role="alert"
                 >
                     <p className="font-bold">Erro</p>
-                    <p className="block sm:inline">{error}</p>
+                    <p className="block sm:inline">{error.message}</p>
                 </div>
             </div>
         );
@@ -254,190 +184,79 @@ export function AdminDashboard() {
                 </Card>
             </div>
 
-            <Tabs
-                defaultValue="solicitacoes"
-                className="mb-8"
-            >
-                <TabsList className="mb-4">
-                    <TabsTrigger value="solicitacoes">
-                        Solicitações Recentes
-                    </TabsTrigger>
-                    <TabsTrigger value="filmes">Filmes Recentes</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="solicitacoes">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Solicitações de Filmes</CardTitle>
-                            <CardDescription>
-                                Solicitações mais recentes feitas pelos usuários
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>ID</TableHead>
-                                        <TableHead>Título</TableHead>
-                                        <TableHead>Ano</TableHead>
-                                        <TableHead>Gênero</TableHead>
-                                        <TableHead>Solicitante</TableHead>
-                                        <TableHead>Ações</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {recenteSolicitacoes.length > 0 ? (
-                                        recenteSolicitacoes.map(
-                                            (solicitacao) => (
-                                                <TableRow
-                                                    key={
-                                                        solicitacao.ID_SOLICITACAO
-                                                    }
-                                                >
-                                                    <TableCell className="font-medium">
-                                                        {
-                                                            solicitacao.ID_SOLICITACAO
-                                                        }
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {solicitacao.NOME}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {solicitacao.ANO}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {solicitacao.GENERO}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {solicitacao.USERNAME}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() =>
-                                                                router.push(
-                                                                    `/admin/solicitacoes/${solicitacao.ID_SOLICITACAO}`
-                                                                )
-                                                            }
-                                                        >
-                                                            <ChevronRight className="h-4 w-4" />
-                                                        </Button>
-                                                    </TableCell>
-                                                </TableRow>
-                                            )
-                                        )
-                                    ) : (
-                                        <TableRow>
-                                            <TableCell
-                                                colSpan={6}
-                                                className="text-center py-4 text-gray-500"
+            <Card>
+                <CardHeader>
+                    <CardTitle>Solicitações de Filmes</CardTitle>
+                    <CardDescription>
+                        Solicitações mais recentes feitas pelos usuários
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>ID</TableHead>
+                                <TableHead>Título</TableHead>
+                                <TableHead>Ano</TableHead>
+                                <TableHead>Gênero</TableHead>
+                                <TableHead>Solicitante</TableHead>
+                                <TableHead>Ações</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {recenteSolicitacoes.length > 0 ? (
+                                recenteSolicitacoes.map((solicitacao) => (
+                                    <TableRow key={solicitacao.ID_SOLICITACAO}>
+                                        <TableCell className="font-medium">
+                                            {solicitacao.ID_SOLICITACAO}
+                                        </TableCell>
+                                        <TableCell>
+                                            {solicitacao.NOME}
+                                        </TableCell>
+                                        <TableCell>{solicitacao.ANO}</TableCell>
+                                        <TableCell>
+                                            {solicitacao.GENERO}
+                                        </TableCell>
+                                        <TableCell>
+                                            {solicitacao.USERNAME}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() =>
+                                                    router.push(
+                                                        `/admin/solicitacoes/${solicitacao.ID_SOLICITACAO}`
+                                                    )
+                                                }
                                             >
-                                                Nenhuma solicitação encontrada
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                            <div className="mt-4 flex justify-end">
-                                <Button
-                                    variant="outline"
-                                    onClick={() =>
-                                        router.push('/admin/solicitacoes')
-                                    }
-                                >
-                                    Ver Todas
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="filmes">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>
-                                Filmes Adicionados Recentemente
-                            </CardTitle>
-                            <CardDescription>
-                                Últimos filmes adicionados ao sistema
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>ID</TableHead>
-                                        <TableHead>Título</TableHead>
-                                        <TableHead>Ano</TableHead>
-                                        <TableHead>Gênero</TableHead>
-                                        <TableHead>Nota</TableHead>
-                                        <TableHead>Ações</TableHead>
+                                                <ChevronRight className="h-4 w-4" />
+                                            </Button>
+                                        </TableCell>
                                     </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {recenteFilmes.length > 0 ? (
-                                        recenteFilmes.map((filme) => (
-                                            <TableRow key={filme.ID_FILME}>
-                                                <TableCell className="font-medium">
-                                                    {filme.ID_FILME}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {filme.NOME}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {filme.ANO}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {filme.GENERO}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center">
-                                                        <Star className="h-4 w-4 text-yellow-500 mr-1" />
-                                                        {filme.NOTA_AGREGADA.toFixed(
-                                                            1
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() =>
-                                                            router.push(
-                                                                `/admin/filmes/${filme.ID_FILME}`
-                                                            )
-                                                        }
-                                                    >
-                                                        <ChevronRight className="h-4 w-4" />
-                                                    </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    ) : (
-                                        <TableRow>
-                                            <TableCell
-                                                colSpan={6}
-                                                className="text-center py-4 text-gray-500"
-                                            >
-                                                Nenhum filme encontrado
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                            <div className="mt-4 flex justify-end">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => router.push('/admin/filmes')}
-                                >
-                                    Ver Todos
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-            </Tabs>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={6}
+                                        className="text-center py-4 text-gray-500"
+                                    >
+                                        Nenhuma solicitação encontrada
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                    <div className="mt-4 flex justify-end">
+                        <Button
+                            variant="outline"
+                            onClick={() => router.push('/admin/solicitacoes')}
+                        >
+                            Ver Todas
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
 
             <div className="grid grid-cols-1 gap-6">
                 <Card>

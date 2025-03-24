@@ -1,5 +1,4 @@
 'use client';
-import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -10,6 +9,47 @@ import { useToast } from '@/hooks/use-toast';
 import { AvaliacaoForm } from './avaliacao-form';
 import { useParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
+import axios from 'axios';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { Avatar, AvatarImage } from '../ui/avatar';
+import { AvatarFallback } from '@radix-ui/react-avatar';
+import { FilmeEditModal } from './filme-edit-modal';
+import { useState } from 'react';
+
+interface fetchFilmeResponse {
+    filme: {
+        NOME: string;
+        ANO: number;
+        ID_FILME: number;
+        DURACAO: number;
+        Tags: { TAG: string }[];
+        GENERO: string;
+        SINOPSE: string;
+        DIRETOR: string;
+        IDIOMA: string;
+        NOTA_AGREGADA: number;
+        IMAGEM: string;
+        IsWatched: boolean;
+        IsFavorite: boolean;
+        IsWatchlist: boolean;
+    };
+    avaliacoes: {
+        USERNAME: string;
+        NOTA: number;
+        DESCRICAO: string;
+        DATA_REVIEW: string;
+    }[];
+    membros: {
+        NOME: string;
+        CARGO: string;
+    }[];
+    userAvaliacion: {
+        USERNAME: string;
+        NOTA: number;
+        DESCRICAO: string;
+        DATA_REVIEW: string;
+    };
+}
 
 export function FilmeDetails({
     user
@@ -25,185 +65,190 @@ export function FilmeDetails({
     const { id } = useParams();
     const router = useRouter();
     const { toast } = useToast();
-    const [filme, setFilme] = useState({
-        NOME: '',
-        ANO: 0,
-        ID_FILME: 0,
-        DURACAO: 0,
-        Tags: [] as { TAG: string }[],
-        GENERO: '',
-        SINOPSE: '',
-        DIRETOR: '',
-        IDIOMA: '',
-        NOTA_AGREGADA: 0
+    const [open, setOpen] = useState(false);
+
+    async function fetchFilme(): Promise<fetchFilmeResponse> {
+        const { data } = await axios.get(`/api/filmes/${id}`, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        return data;
+    }
+
+    const { data, isLoading, isError, refetch } = useQuery({
+        queryKey: ['filme', id],
+        queryFn: fetchFilme,
+        initialData: {
+            filme: {
+                NOME: 'A Cidade Perdida',
+                ANO: 2023,
+                IMAGEM: 'https://www.themoviedb.org/t/p/w500/7q5Z1X0s6j8K5K4t3fK5fG2x1Vd.jpg',
+                ID_FILME: 1,
+                DURACAO: 112,
+                Tags: [{ TAG: 'Aventura' }, { TAG: 'Comédia' }],
+                GENERO: 'Aventura',
+                SINOPSE:
+                    'Uma romancista de aventura é sequestrada por um bilionário excêntrico enquanto promovia seu novo livro, e um modelo de capa de livro se vê obrigado a resgatá-la.',
+                DIRETOR: 'Aaron Nee',
+                IDIOMA: 'Inglês',
+                NOTA_AGREGADA: 7.5,
+                IsWatched: false,
+                IsFavorite: false,
+                IsWatchlist: false
+            },
+            avaliacoes: [
+                {
+                    USERNAME: 'Lucas',
+                    NOTA: 8,
+                    DESCRICAO: 'Ótimo filme!',
+                    DATA_REVIEW: '2023-10-01'
+                }
+            ],
+            membros: [
+                {
+                    NOME: 'Sandra Bullock',
+                    CARGO: 'Atriz Principal'
+                },
+                {
+                    NOME: 'Channing Tatum',
+                    CARGO: 'Ator Principal'
+                }
+            ],
+            userAvaliacion: {
+                USERNAME: 'Lucas',
+                NOTA: 8,
+                DESCRICAO: 'Ótimo filme!',
+                DATA_REVIEW: '2023-10-01'
+            }
+        }
     });
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [avaliacoes, setAvaliacoes] = useState([
-        {
-            USERNAME: '',
-            NOTA: 0,
-            DESCRICAO: '',
-            DATA_REVIEW: ''
+    async function toggleReaction(
+        active: boolean,
+        type: 'watchlist' | 'favorite' | 'watched'
+    ): Promise<void> {
+        await axios.post(
+            `/api/filmes/reactions`,
+            {
+                type: type,
+                username: user.username,
+                filmeId: Number(id),
+                active: active
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
+            }
+        );
+    }
+
+    const toogleMutation = useMutation({
+        mutationFn: ({
+            active,
+            type
+        }: {
+            active: boolean;
+            type: 'watchlist' | 'favorite' | 'watched';
+        }) => {
+            return toggleReaction(active, type);
         },
-        {
-            USERNAME: '',
-            NOTA: 0,
-            DESCRICAO: '',
-            DATA_REVIEW: ''
+        onSuccess: () => {
+            toast({
+                description: 'Reação do filme atualizada com sucesso!',
+                variant: 'default'
+            });
+            refetch();
+        },
+        onError: () => {
+            toast({
+                description: 'Ocorreu um erro ao atualizar a reação do filme.',
+                variant: 'destructive'
+            });
         }
-    ]);
-    const [membros, setMembros] = useState([
-        {
-            NOME: '',
-            CARGO: ''
-        }
-    ]);
-    const [userStatus, setUserStatus] = useState<{
-        assistido: boolean;
-        watchlist: boolean;
-        favorito: boolean;
-        avaliacao: { 
-            ID_AVALIACAO: number;
-            ID_FILME: number;
-            ID_USUARIO: number;
-            NOTA: number;
-            DESCRICAO: string;
-        } | undefined;
-    }>({
-        assistido: false,
-        watchlist: false,
-        favorito: false,
-        avaliacao: undefined
     });
 
-    // useEffect(() => {
-    //     const fetchFilme = async () => {
-    //         try {
-    //             // Buscar detalhes do filme
-    //             const filmeRes = await fetch(`/api/filmes/${id}`);
-    //             if (!filmeRes.ok) throw new Error('Filme não encontrado');
-    //             const filmeData = await filmeRes.json();
-
-    //             // Buscar avaliações
-    //             const avaliacoesRes = await fetch(
-    //                 `/api/filmes/${id}/avaliacoes`
-    //             );
-    //             const avaliacoesData = await avaliacoesRes.json();
-
-    //             // Buscar membros do elenco e equipe
-    //             const membrosRes = await fetch(`/api/filmes/${id}/membros`);
-    //             const membrosData = await membrosRes.json();
-
-    //             // Se o usuário estiver logado, buscar seu status em relação ao filme
-    //             if (user) {
-    //                 const statusRes = await fetch(`/api/filmes/${id}/status`, {
-    //                     headers: {
-    //                         Authorization: `Bearer ${localStorage.getItem('token')}`
-    //                     }
-    //                 });
-    //                 const statusData = await statusRes.json();
-    //                 setUserStatus(statusData);
-    //             }
-
-    //             setFilme(filmeData);
-    //             setAvaliacoes(avaliacoesData);
-    //             setMembros(membrosData);
-    //         } catch (err) {
-    //             setError(err.message);
-    //         } finally {
-    //             setLoading(false);
-    //         }
-    //     };
-
-    //     fetchFilme();
-    // }, [id, user]);
-
-    const handleToggleStatus = async (type: keyof typeof userStatus) => {
+    const toggleEvent = async (
+        e: React.MouseEvent<HTMLButtonElement>,
+        type: 'watchlist' | 'favorite' | 'watched'
+    ) => {
+        e.stopPropagation();
         if (!user) {
             router.push('/auth/login');
             return;
         }
-
         try {
-            const status = userStatus[type];
-            const action = status ? 'remover' : 'adicionar';
-
-            await fetch(`/api/filmes/${id}/${type}/${action}`, {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`
-                }
+            const key =
+                `Is${type.charAt(0).toUpperCase() + type.slice(1)}` as keyof typeof data.filme;
+            const isActive = data?.filme[key];
+            await toogleMutation.mutateAsync({
+                active: !isActive,
+                type: type
             });
-
-            setUserStatus((prev) => ({
-                ...prev,
-                [type]: !status
-            }));
-
-            toast({
-                title: `${status ? 'Removido' : 'Adicionado'} ${
-                    type === 'watchlist'
-                        ? 'da watchlist'
-                        : type === 'favorito'
-                          ? 'dos favoritos'
-                          : 'dos assistidos'
-                }`
-            });
-        } catch (err) {
-            toast({
-                title: 'Erro',
-                description: `Não foi possível atualizar:`, // ${err.message}`,
-                variant: 'destructive'
-            });
+        } catch (error) {
+            console.error('Erro ao atualizar a reação do filme:', error);
         }
     };
 
+    const mutateAvaliacao = async (avaliacao: {
+        USERNAME: string;
+        NOTA: number;
+        DESCRICAO: string;
+    }) => {
+        await axios.post(
+            `/api/filmes/${id}/avaliacoes`,
+            {
+                ...avaliacao,
+                ID_FILME: Number(id),
+                ID_USUARIO: user.ID_USUARIO
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
+            }
+        );
+    };
+
+    const { mutate: submitAvaliacao } = useMutation({
+        mutationFn: mutateAvaliacao,
+        onSuccess: () => {
+            toast({
+                description: 'Avaliação salva com sucesso!',
+                variant: 'default'
+            });
+            refetch();
+        },
+        onError: () => {
+            toast({
+                description: 'Erro ao salvar a avaliação.',
+                variant: 'destructive'
+            });
+        }
+    });
+
     const handleSubmitAvaliacao = async (avaliacao: {
-        ID_AVALIACAO: number;
         ID_FILME: number;
         ID_USUARIO: number;
         NOTA: number;
         DESCRICAO: string;
     }) => {
         try {
-            const method = userStatus.avaliacao ? 'PUT' : 'POST';
-
-            await fetch(`/api/filmes/${id}/avaliacoes`, {
-                method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify(avaliacao)
-            });
-
-            // Atualizar a avaliação do usuário no estado
-            setUserStatus((prev) => ({
-                ...prev,
-                avaliacao
-            }));
-
-            // Recarregar todas as avaliações
-            const avaliacoesRes = await fetch(`/api/filmes/${id}/avaliacoes`);
-            const avaliacoesData = await avaliacoesRes.json();
-            setAvaliacoes(avaliacoesData);
-
-            toast({
-                title: userStatus.avaliacao
-                    ? 'Avaliação atualizada'
-                    : 'Avaliação adicionada'
+            submitAvaliacao({
+                USERNAME: user.username,
+                NOTA: avaliacao.NOTA,
+                DESCRICAO: avaliacao.DESCRICAO
             });
         } catch (err) {
+            console.error('Erro ao salvar a avaliação:', err);
             toast({
-                title: 'Erro',
-                description: `Não foi possível salvar a avaliação:`, // ${err.message}`,
+                description: `Não foi possível salvar a avaliação:`,
                 variant: 'destructive'
             });
         }
     };
 
-    if (loading) {
+    if (isLoading) {
         return (
             <div className="flex items-center justify-center h-64">
                 Carregando...
@@ -211,11 +256,13 @@ export function FilmeDetails({
         );
     }
 
-    if (error) {
+    if (isError) {
         return (
             <div className="flex flex-col items-center justify-center h-64">
-                <p className="text-red-500 mb-4">{error}</p>
-                <Button onClick={() => router.push('/filmes')}>
+                <p className="text-red-500 mb-4">
+                    Ocorreu um erro ao carregar os detalhes do filme.
+                </p>
+                <Button onClick={() => router.push('/home')}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Voltar para filmes
                 </Button>
@@ -227,7 +274,7 @@ export function FilmeDetails({
         <div className="container mx-auto py-8">
             <Button
                 variant="ghost"
-                onClick={() => router.push('/filmes')}
+                onClick={() => router.push('/home')}
                 className="mb-4"
             >
                 <ArrowLeft className="mr-2 h-4 w-4" />
@@ -236,47 +283,48 @@ export function FilmeDetails({
 
             <div className="grid md:grid-cols-3 gap-8">
                 <div className="col-span-1">
-                    <div className="bg-gray-200 w-full h-96 rounded-lg mb-4">
-                        <img
-                            src={`/api/placeholder/400/600?text=${encodeURIComponent(filme.NOME)}`}
-                            alt={filme.NOME}
+                    <Avatar className="bg-gray-200 w-full h-96 rounded-lg mb-4">
+                        <AvatarImage
+                            src={data?.filme?.IMAGEM}
+                            alt={data?.filme?.NOME}
                             className="w-full h-full object-cover rounded-lg"
                         />
-                    </div>
+                        <AvatarFallback>{data?.filme.NOME}</AvatarFallback>
+                    </Avatar>
 
                     <div className="flex gap-2 mb-4">
                         <Button
                             variant={
-                                userStatus.watchlist ? 'default' : 'outline'
+                                data?.filme?.IsWatched ? 'default' : 'outline'
                             }
                             className="flex-1"
-                            onClick={() => handleToggleStatus('watchlist')}
+                            onClick={(e) => toggleEvent(e, 'watchlist')}
                         >
                             <Clock className="mr-2 h-4 w-4" />
-                            {userStatus.watchlist
+                            {data?.filme?.IsWatchlist
                                 ? 'Na watchlist'
                                 : 'Watchlist'}
                         </Button>
 
                         <Button
                             variant={
-                                userStatus.favorito ? 'default' : 'outline'
+                                data?.filme?.IsFavorite ? 'default' : 'outline'
                             }
                             className="flex-1"
-                            onClick={() => handleToggleStatus('favorito')}
+                            onClick={(e) => toggleEvent(e, 'favorite')}
                         >
                             <Heart className="mr-2 h-4 w-4" />
-                            {userStatus.favorito ? 'Favorito' : 'Favoritar'}
+                            {data?.filme?.IsFavorite ? 'Favorito' : 'Favoritar'}
                         </Button>
                     </div>
 
                     <Button
-                        variant={userStatus.assistido ? 'default' : 'outline'}
+                        variant={data?.filme?.IsWatched ? 'default' : 'outline'}
                         className="w-full mb-6"
-                        onClick={() => handleToggleStatus('assistido')}
+                        onClick={(e) => toggleEvent(e, 'watched')}
                     >
                         <Eye className="mr-2 h-4 w-4" />
-                        {userStatus.assistido
+                        {data?.filme?.IsWatched
                             ? 'Assistido'
                             : 'Marcar como assistido'}
                     </Button>
@@ -288,38 +336,40 @@ export function FilmeDetails({
                                 <dt className="text-sm text-gray-500">
                                     Diretor
                                 </dt>
-                                <dd>{filme.DIRETOR}</dd>
+                                <dd>{data?.filme.DIRETOR}</dd>
                             </div>
                             <div>
                                 <dt className="text-sm text-gray-500">Ano</dt>
-                                <dd>{filme.ANO}</dd>
+                                <dd>{data?.filme.ANO}</dd>
                             </div>
                             <div>
                                 <dt className="text-sm text-gray-500">
                                     Duração
                                 </dt>
                                 <dd>
-                                    {Math.floor(filme.DURACAO / 60)}h{' '}
-                                    {filme.DURACAO % 60}min
+                                    {Math.floor(
+                                        (data?.filme.DURACAO || 0) / 60
+                                    )}
+                                    h {(data?.filme.DURACAO || 0) % 60}min
                                 </dd>
                             </div>
                             <div>
                                 <dt className="text-sm text-gray-500">
                                     Idioma
                                 </dt>
-                                <dd>{filme.IDIOMA}</dd>
+                                <dd>{data?.filme.IDIOMA}</dd>
                             </div>
                             <div>
                                 <dt className="text-sm text-gray-500">
                                     Gênero
                                 </dt>
-                                <dd>{filme.GENERO}</dd>
+                                <dd>{data?.filme.GENERO}</dd>
                             </div>
                             <div>
                                 <dt className="text-sm text-gray-500">Tags</dt>
                                 <dd className="flex flex-wrap gap-1 mt-1">
-                                    {filme.Tags &&
-                                        filme.Tags.map((tag) => (
+                                    {data?.filme.Tags &&
+                                        data?.filme.Tags.map((tag) => (
                                             <Badge
                                                 key={tag.TAG}
                                                 variant="outline"
@@ -336,20 +386,22 @@ export function FilmeDetails({
                 <div className="col-span-2">
                     <div className="flex items-start justify-between mb-2">
                         <div>
-                            <h1 className="text-3xl font-bold">{filme.NOME}</h1>
+                            <h1 className="text-3xl font-bold">
+                                {data?.filme.NOME}
+                            </h1>
                             <div className="flex items-center mt-1">
                                 <div className="flex items-center mr-4">
                                     <Star className="h-5 w-5 text-yellow-400 mr-1" />
                                     <span className="font-bold text-lg">
-                                        {filme.NOTA_AGREGADA.toFixed(1)}
+                                        {data?.filme.NOTA_AGREGADA.toFixed(1)}
                                     </span>
                                     <span className="text-gray-500 ml-1">
                                         / 10
                                     </span>
                                 </div>
                                 <div className="text-gray-500">
-                                    {avaliacoes.length}{' '}
-                                    {avaliacoes.length === 1
+                                    {data?.avaliacoes.length}{' '}
+                                    {data?.avaliacoes.length === 1
                                         ? 'avaliação'
                                         : 'avaliações'}
                                 </div>
@@ -360,6 +412,7 @@ export function FilmeDetails({
                             <Button
                                 variant="outline"
                                 size="sm"
+                                onClick={() => setOpen(true)}
                             >
                                 <Edit className="mr-2 h-4 w-4" />
                                 Editar filme
@@ -367,7 +420,7 @@ export function FilmeDetails({
                         )}
                     </div>
 
-                    <p className="text-gray-700 mb-6">{filme.SINOPSE}</p>
+                    <p className="text-gray-700 mb-6">{data?.filme.SINOPSE}</p>
 
                     <Tabs
                         defaultValue="avaliacoes"
@@ -394,7 +447,16 @@ export function FilmeDetails({
                                         </h3>
                                         <AvaliacaoForm
                                             filmeId={Number(id)}
-                                            avaliacao={userStatus.avaliacao}
+                                            avaliacao={{
+                                                ID_FILME: Number(id),
+                                                ID_USUARIO: user.ID_USUARIO,
+                                                NOTA:
+                                                    data?.userAvaliacion.NOTA ||
+                                                    0,
+                                                DESCRICAO:
+                                                    data?.userAvaliacion
+                                                        .DESCRICAO || ''
+                                            }}
                                             onSubmit={handleSubmitAvaliacao}
                                         />
                                     </div>
@@ -405,13 +467,13 @@ export function FilmeDetails({
                             <h3 className="text-lg font-semibold mb-2">
                                 Avaliações dos usuários
                             </h3>
-                            {avaliacoes.length === 0 ? (
+                            {data?.avaliacoes.length === 0 ? (
                                 <p className="text-gray-500">
                                     Ainda não há avaliações para este filme.
                                 </p>
                             ) : (
                                 <div className="space-y-4">
-                                    {avaliacoes.map((avaliacao) => (
+                                    {data?.avaliacoes.map((avaliacao) => (
                                         <Card
                                             key={avaliacao.USERNAME}
                                             className="p-4"
@@ -451,15 +513,16 @@ export function FilmeDetails({
                                     </h3>
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                         <Card className="p-4 flex flex-col items-center">
-                                            <div className="w-20 h-20 rounded-full bg-gray-200 mb-2">
-                                                <img
-                                                    src={`/api/placeholder/80/80?text=${encodeURIComponent(filme.DIRETOR[0])}`}
-                                                    alt={filme.DIRETOR}
-                                                    className="w-full h-full object-cover rounded-full"
-                                                />
-                                            </div>
+                                            <Avatar className="w-20 h-20 rounded-full bg-gray-200 mb-2">
+                                                <AvatarFallback>
+                                                    {data?.filme.DIRETOR.substring(
+                                                        0,
+                                                        2
+                                                    ).toUpperCase()}
+                                                </AvatarFallback>
+                                            </Avatar>
                                             <div className="font-semibold text-center">
-                                                {filme.DIRETOR}
+                                                {data?.filme.DIRETOR}
                                             </div>
                                             <div className="text-gray-500 text-sm text-center">
                                                 Diretor
@@ -472,25 +535,31 @@ export function FilmeDetails({
                                     <h3 className="text-lg font-semibold mb-2">
                                         Elenco e Equipe
                                     </h3>
-                                    {membros.length === 0 ? (
+                                    {data?.membros.length === 0 ? (
                                         <p className="text-gray-500">
                                             Não há informações sobre o elenco e
                                             equipe.
                                         </p>
                                     ) : (
                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                            {membros.map((membro) => (
+                                            {data?.membros.map((membro) => (
                                                 <Card
                                                     key={`${membro.NOME}-${membro.CARGO}`}
                                                     className="p-4 flex flex-col items-center"
                                                 >
-                                                    <div className="w-20 h-20 rounded-full bg-gray-200 mb-2">
-                                                        <img
+                                                    <Avatar className="w-20 h-20 rounded-full bg-gray-200 mb-2">
+                                                        <AvatarImage
                                                             src={`/api/placeholder/80/80?text=${encodeURIComponent(membro.NOME[0])}`}
                                                             alt={membro.NOME}
                                                             className="w-full h-full object-cover rounded-full"
                                                         />
-                                                    </div>
+                                                        <AvatarFallback>
+                                                            {membro.NOME.substring(
+                                                                0,
+                                                                2
+                                                            ).toUpperCase()}
+                                                        </AvatarFallback>
+                                                    </Avatar>
                                                     <div className="font-semibold text-center">
                                                         {membro.NOME}
                                                     </div>
@@ -507,6 +576,11 @@ export function FilmeDetails({
                     </Tabs>
                 </div>
             </div>
+            <FilmeEditModal
+                filmeId={Number(id)}
+                open={open}
+                onOpenChange={setOpen}
+            />
         </div>
     );
 }

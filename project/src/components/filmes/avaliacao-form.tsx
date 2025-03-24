@@ -11,14 +11,12 @@ export function AvaliacaoForm({
 }: {
     filmeId: number;
     avaliacao?: {
-        ID_AVALIACAO: number;
         ID_FILME: number;
         ID_USUARIO: number;
         NOTA: number;
         DESCRICAO: string;
     };
     onSubmit: (data: {
-        ID_AVALIACAO: number;
         ID_FILME: number;
         ID_USUARIO: number;
         NOTA: number;
@@ -47,7 +45,6 @@ export function AvaliacaoForm({
                 ID_FILME: filmeId,
                 NOTA: nota,
                 DESCRICAO: descricao,
-                ID_AVALIACAO: avaliacao ? avaliacao.ID_AVALIACAO : 0,
                 ID_USUARIO: avaliacao ? avaliacao.ID_USUARIO : 0
             });
         } finally {
@@ -59,7 +56,6 @@ export function AvaliacaoForm({
         setNota(value);
     };
 
-    // Renderiza as estrelas para a classificação
     const renderStars = () => {
         const stars = [];
         for (let i = 1; i <= 10; i++) {

@@ -30,4 +30,4 @@ const pool = new Pool({
     }
 }
 
-export { query };
+export { query, pool };

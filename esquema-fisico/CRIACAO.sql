@@ -43,22 +43,39 @@ CREATE TABLE Avaliacao(
 
 -- TODO: Trigger pra data atual quando dá insert na Avaliacao?
 
-CREATE TRIGGER update_nota_agregada
-AFTER UPDATE OR INSERT OR DELETE ON Avaliacao
-FOR EACH ROW
+CREATE OR REPLACE FUNCTION update_nota_agregada_function()
+RETURNS TRIGGER AS $$
+DECLARE
+    avg_rating DECIMAL(3,1);
 BEGIN
-    DECLARE avg_rating numeric(3,1);
-
     -- Calculate the average rating for the movie
     SELECT AVG(NOTA) INTO avg_rating
     FROM Avaliacao
-    WHERE ID_FILME = NEW.ID_FILME;
-
+    WHERE ID_FILME = COALESCE(NEW.ID_FILME, OLD.ID_FILME);
+    
     -- Update the nota_agregada column in the Filme table
     UPDATE Filme
-    SET NOTA_AGREGADA = avg_rating
-    WHERE ID_FILME = NEW.ID_FILME;
+    SET NOTA_AGREGADA = COALESCE(avg_rating, 0)
+    WHERE ID_FILME = COALESCE(NEW.ID_FILME, OLD.ID_FILME);
+    
+    RETURN NEW;
 END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_nota_agregada_after_insert
+AFTER INSERT ON Avaliacao
+FOR EACH ROW
+EXECUTE FUNCTION update_nota_agregada_function();
+
+CREATE TRIGGER update_nota_agregada_after_update
+AFTER UPDATE ON Avaliacao
+FOR EACH ROW
+EXECUTE FUNCTION update_nota_agregada_function();
+
+CREATE TRIGGER update_nota_agregada_after_delete
+AFTER DELETE ON Avaliacao
+FOR EACH ROW
+EXECUTE FUNCTION update_nota_agregada_function();
 
 CREATE TABLE Membro( 
     NOME varchar(255) PRIMARY KEY,
