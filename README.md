@@ -18,9 +18,8 @@ O projeto é composto pelos seguintes arquivos e pastas:
 ```
 if976_2024.2-movieReviewDB-main/
 │
-├── RunDB.py               # Script Python para interagir com o banco de dados
+├── project               # plataforma com o banco de dados
 ├── esquema-fisico/        # Diagramas e documentos explicativos do modelo físico
-├── SQL Scripts/           # Scripts para criação e povoamento do banco de dados
 └── README.md              # Este arquivo com a descrição do projeto
 ```
 
