@@ -12,13 +12,13 @@ export function AvaliacaoForm({
     filmeId: number;
     avaliacao?: {
         ID_FILME: number;
-        ID_USUARIO: number;
+        USERNAME: string;
         NOTA: number;
         DESCRICAO: string;
     };
     onSubmit: (data: {
         ID_FILME: number;
-        ID_USUARIO: number;
+        USERNAME: string;
         NOTA: number;
         DESCRICAO: string;
     }) => Promise<void>;
@@ -45,7 +45,7 @@ export function AvaliacaoForm({
                 ID_FILME: filmeId,
                 NOTA: nota,
                 DESCRICAO: descricao,
-                ID_USUARIO: avaliacao ? avaliacao.ID_USUARIO : 0
+                USERNAME: avaliacao ? avaliacao.USERNAME : ''
             });
         } finally {
             setIsSubmitting(false);

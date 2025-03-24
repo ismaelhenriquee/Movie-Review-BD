@@ -1,116 +1,107 @@
 'use client';
-import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Star, Clock, Heart, Eye, Edit, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { useAuth } from '@/contexts/auth-context';
+import axios from 'axios';
+import { useMutation, useQuery } from '@tanstack/react-query';
 
-export function SolicitationDetails({
-    user
-}: {
-    user: {
-        username: string;
-        email: string;
-        ID_USUARIO: number;
-        senha: string;
-        isAdmin: boolean;
-    };
-}) {
+interface fetchFilmeResponse {
+    nome: string;
+    ano: number;
+    ID_SOLICITACAO: number;
+    duracao: number;
+    Tags: { TAG: string }[];
+    genero: string;
+    sinopse: string;
+    diretor: string;
+    idioma: string;
+    IMAGEM: string;
+}
+export function SolicitationDetails() {
+    const { user } = useAuth();
+
     const { id } = useParams();
     const router = useRouter();
     const { toast } = useToast();
-    const [solicitation, setSolicitation] = useState({
-        NOME: '',
-        ANO: 0,
-        ID_Solicitation: 0,
-        DURACAO: 0,
-        Tags: [{ TAG: 'Amor' }] as { TAG: string }[],
-        GENERO: 'Romance',
-        SINOPSE:
-            'O filme é sobre um amor proibido entre dois jovens de mundos diferentes.O filme é sobre um amor proibido entre dois jovens de mundos diferentes.',
-        DIRETOR: 'Eduardo',
-        IDIOMA: 'Ingles',
-        NOTA_AGREGADA: 0
-    });
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
 
-    const [membros, setMembros] = useState([
-        {
-            NOME: 'hh',
-            CARGO: 'hkjbkj'
+    async function fetchSolicitacion(): Promise<fetchFilmeResponse> {
+        const { data } = await axios.get(`/api/solicitacoes/${id}`, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        console.log(data, '💜💜');
+        return data;
+    }
+    async function aproveSolicitacion(): Promise<void> {
+        await axios.post(
+            `/api/solicitacoes/${id}`,
+            {
+                adminUsername: user?.username
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
+            }
+        );
+    }
+
+    async function rejectSolicitacion(): Promise<void> {
+        await axios.delete(`/api/solicitacoes/${id}`, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+    }
+    const mutationAprove = useMutation({
+        mutationFn: aproveSolicitacion,
+        onSuccess: () => {
+            toast({
+                title: 'Solicitação aprovada com sucesso!',
+                description: 'O filme foi adicionado ao catálogo.',
+                variant: 'default'
+            });
+            router.push('/admin');
+        },
+        onError: () => {
+            toast({
+                title: 'Erro ao aprovar a solicitação',
+                variant: 'destructive'
+            });
         }
-    ]);
-    const [userStatus, setUserStatus] = useState<{
-        assistido: boolean;
-        watchlist: boolean;
-        favorito: boolean;
-        avaliacao:
-            | {
-                  ID_AVALIACAO: number;
-                  ID_Solicitation: number;
-                  ID_USUARIO: number;
-                  NOTA: number;
-                  DESCRICAO: string;
-              }
-            | undefined;
-    }>({
-        assistido: false,
-        watchlist: false,
-        favorito: false,
-        avaliacao: undefined
+    });
+    const mutationReject = useMutation({
+        mutationFn: rejectSolicitacion,
+        onSuccess: () => {
+            toast({
+                title: 'Solicitação aprovada com sucesso!',
+                variant: 'default'
+            });
+            router.push('/admin');
+        },
+        onError: () => {
+            toast({
+                title: 'Erro ao aprovar a solicitação',
+                variant: 'destructive'
+            });
+        }
     });
 
-    // useEffect(() => {
-    //     const fetchSolicitation = async () => {
-    //         try {
-    //             // Buscar detalhes do Solicitation
-    //             const SolicitationRes = await fetch(`/api/Solicitations/${id}`);
-    //             if (!SolicitationRes.ok) throw new Error('Solicitation não encontrado');
-    //             const SolicitationData = await SolicitationRes.json();
+    const { data, isLoading, isError } = useQuery({
+        queryKey: ['solicitation', id],
+        queryFn: fetchSolicitacion,
+        enabled: !!id
+    });
 
-    //             // Buscar avaliações
-    //             const solicitationRes = await fetch(
-    //                 `/api/Solicitations/${id}/solicitation`
-    //             );
-    //             const solicitationData = await solicitationRes.json();
-
-    //             // Buscar membros do elenco e equipe
-    //             const membrosRes = await fetch(`/api/Solicitations/${id}/membros`);
-    //             const membrosData = await membrosRes.json();
-
-    //             // Se o usuário estiver logado, buscar seu status em relação ao Solicitation
-    //             if (user) {
-    //                 const statusRes = await fetch(`/api/Solicitations/${id}/status`, {
-    //                     headers: {
-    //                         Authorization: `Bearer ${localStorage.getItem('token')}`
-    //                     }
-    //                 });
-    //                 const statusData = await statusRes.json();
-    //                 setUserStatus(statusData);
-    //             }
-
-    //             setSolicitation(SolicitationData);
-    //             setsolicitation(solicitationData);
-    //             setMembros(membrosData);
-    //         } catch (err) {
-    //             setError(err.message);
-    //         } finally {
-    //             setLoading(false);
-    //         }
-    //     };
-
-    //     fetchSolicitation();
-    // }, [id, user]);
-
-
-
-    if (loading) {
+    if (isLoading) {
         return (
             <div className="flex items-center justify-center h-64">
                 Carregando...
@@ -118,10 +109,12 @@ export function SolicitationDetails({
         );
     }
 
-    if (error) {
+    if (isError) {
         return (
             <div className="flex flex-col items-center justify-center h-64">
-                <p className="text-red-500 mb-4">{error}</p>
+                <p className="text-red-500 mb-4">
+                    Erro ao carregar os detalhes da solicitação
+                </p>
                 <Button onClick={() => router.push('/admin')}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Voltar
@@ -145,28 +138,40 @@ export function SolicitationDetails({
                 <div className="col-span-1">
                     <div className="bg-gray-200 w-full h-96 rounded-lg mb-4">
                         <img
-                            src={`/api/placeholder/400/600?text=${encodeURIComponent(solicitation.NOME)}`}
-                            alt={solicitation.NOME}
+                            src={`/api/placeholder/400/600?text=${encodeURIComponent(data?.nome || '')}`}
+                            alt={data?.nome}
                             className="w-full h-full object-cover rounded-lg"
                         />
                     </div>
                     <div className="col-span-1 md:col-span-2">
-                        <dt className="text-sm text-gray-500">Sinopse</dt>
-                        <dd>{solicitation.SINOPSE}</dd>
+                        <dt className="text-sm text-gray-500">sinopse</dt>
+                        <dd>{data?.sinopse}</dd>
                     </div>
                 </div>
 
                 <div className="col-span-2">
                     <div className="flex items-start justify-between mb-2 flex-col gap-2">
                         {user && user.isAdmin && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="ml-auto "
-                            >
-                                <Edit className="mr-2 h-4 w-4" />
-                                Editar Solicitação
-                            </Button>
+                            <div className="flex items-center gap-2 w-full">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="ml-auto "
+                                    onClick={() => mutationAprove.mutate()}
+                                    disabled={mutationAprove.isPending}
+                                >
+                                    Aprovar Solicitação
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="ml-auto "
+                                    onClick={() => mutationReject.mutate()}
+                                    disabled={mutationReject.isPending}
+                                >
+                                    Rejeitar Solicitação
+                                </Button>
+                            </div>
                         )}
                         <div className="flex items-center gap-2 w-full">
                             <div className="flex items-center mt-1 flex-col w-full">
@@ -176,15 +181,15 @@ export function SolicitationDetails({
                                 <dl className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
                                     <div>
                                         <dt className="text-sm text-gray-500">
-                                            Nome
+                                            nome
                                         </dt>
-                                        <dd>{user.username}</dd>
+                                        <dd>{user?.username}</dd>
                                     </div>
                                     <div>
                                         <dt className="text-sm text-gray-500">
                                             Email
                                         </dt>
-                                        <dd>{user.email}</dd>
+                                        <dd>{user?.email}</dd>
                                     </div>
                                 </dl>
                             </div>
@@ -203,7 +208,7 @@ export function SolicitationDetails({
                                 Solicitação
                             </TabsTrigger>
                             <TabsTrigger value="elenco">
-                                Elenco e Equipe
+                                Elenco
                             </TabsTrigger>
                         </TabsList>
 
@@ -214,43 +219,48 @@ export function SolicitationDetails({
                             <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <dt className="text-sm text-gray-500">
-                                        Nome
+                                        nome
                                     </dt>
-                                    <dd>{solicitation.NOME}</dd>
+                                    <dd>{data?.nome}</dd>
                                 </div>
                                 <div>
                                     <dt className="text-sm text-gray-500">
-                                        Diretor
+                                        diretor
                                     </dt>
-                                    <dd>{solicitation.DIRETOR}</dd>
+                                    <dd>{data?.diretor}</dd>
                                 </div>
 
                                 <div>
                                     <dt className="text-sm text-gray-500">
-                                        Ano
+                                        ano
                                     </dt>
-                                    <dd>{solicitation.ANO}</dd>
+                                    <dd>{data?.ano}</dd>
                                 </div>
                                 <div>
                                     <dt className="text-sm text-gray-500">
                                         Duração
                                     </dt>
                                     <dd>
-                                        {Math.floor(solicitation.DURACAO / 60)}h{' '}
-                                        {solicitation.DURACAO % 60}min
+                                        {Math.floor(
+                                            (data?.duracao || 0) /
+                                                60
+                                        )}
+                                        h{' '}
+                                        {(data?.duracao || 0) % 60}
+                                        min
                                     </dd>
                                 </div>
                                 <div>
                                     <dt className="text-sm text-gray-500">
-                                        Idioma
+                                        idioma
                                     </dt>
-                                    <dd>{solicitation.IDIOMA}</dd>
+                                    <dd>{data?.idioma}</dd>
                                 </div>
                                 <div>
                                     <dt className="text-sm text-gray-500">
                                         Gênero
                                     </dt>
-                                    <dd>{solicitation.GENERO}</dd>
+                                    <dd>{data?.genero}</dd>
                                 </div>
 
                                 <div className="col-span-1 md:col-span-2">
@@ -258,15 +268,17 @@ export function SolicitationDetails({
                                         Tags
                                     </dt>
                                     <dd className="flex flex-wrap gap-1 mt-1">
-                                        {solicitation.Tags &&
-                                            solicitation.Tags.map((tag) => (
-                                                <Badge
-                                                    key={tag.TAG}
-                                                    variant="outline"
-                                                >
-                                                    {tag.TAG}
-                                                </Badge>
-                                            ))}
+                                        {data?.Tags &&
+                                            data?.Tags.map(
+                                                (tag) => (
+                                                    <Badge
+                                                        key={tag.TAG}
+                                                        variant="outline"
+                                                    >
+                                                        {tag.TAG}
+                                                    </Badge>
+                                                )
+                                            )}
                                     </dd>
                                 </div>
                             </dl>
@@ -282,67 +294,30 @@ export function SolicitationDetails({
                                         <Card className="p-4 flex flex-col items-center">
                                             <Avatar className="w-20 h-20 rounded-full bg-gray-200 mb-2">
                                                 <AvatarImage
-                                                    src={`/api/placeholder/80/80?text=${encodeURIComponent(solicitation.DIRETOR[0])}`}
-                                                    alt={solicitation.DIRETOR}
+                                                    src={`/api/placeholder/80/80?text=${encodeURIComponent(data?.diretor[0] || '')}`}
+                                                    alt={
+                                                        data?
+                                                            .diretor
+                                                    }
                                                     className="w-full h-full object-cover rounded-full"
                                                 />
                                                 <AvatarFallback>
-                                                    {solicitation.DIRETOR.substring(
-                                                        0,
-                                                        2
-                                                    ).toUpperCase()}
+                                                    {data?.diretor
+                                                        .substring(0, 2)
+                                                        .toUpperCase()}
                                                 </AvatarFallback>
                                             </Avatar>
                                             <div className="font-semibold text-center">
-                                                {solicitation.DIRETOR}
+                                                {data?.diretor}
                                             </div>
                                             <div className="text-gray-500 text-sm text-center">
-                                                Diretor
+                                                diretor
                                             </div>
                                         </Card>
                                     </div>
                                 </div>
 
-                                <div>
-                                    <h3 className="text-lg font-semibold mb-2">
-                                        Elenco e Equipe
-                                    </h3>
-                                    {membros.length === 0 ? (
-                                        <p className="text-gray-500">
-                                            Não há informações sobre o elenco e
-                                            equipe.
-                                        </p>
-                                    ) : (
-                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                            {membros.map((membro) => (
-                                                <Card
-                                                    key={`${membro.NOME}-${membro.CARGO}`}
-                                                    className="p-4 flex flex-col items-center"
-                                                >
-                                                    <Avatar className="w-20 h-20 rounded-full bg-gray-200 mb-2">
-                                                        <AvatarImage
-                                                            src={`/api/placeholder/80/80?text=${encodeURIComponent(membro.NOME[0])}`}
-                                                            alt={membro.NOME}
-                                                            className="w-full h-full object-cover rounded-full"
-                                                        />
-                                                        <AvatarFallback>
-                                                            {membro.NOME.substring(
-                                                                0,
-                                                                2
-                                                            ).toUpperCase()}
-                                                        </AvatarFallback>
-                                                    </Avatar>
-                                                    <div className="font-semibold text-center">
-                                                        {membro.NOME}
-                                                    </div>
-                                                    <div className="text-gray-500 text-sm text-center">
-                                                        {membro.CARGO}
-                                                    </div>
-                                                </Card>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
+                              
                             </div>
                         </TabsContent>
                     </Tabs>

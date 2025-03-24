@@ -54,7 +54,7 @@ CREATE TABLE U_Admin(
 CREATE TABLE Filme(
     NOME varchar(255) NOT NULL,
     ANO integer NOT NULL,
-    ID_FILME integer PRIMARY KEY,
+    ID_FILME SERIAL PRIMARY KEY,
     DURACAO integer NOT NULL,
     GENERO varchar(255) NOT NULL,
     SINOPSE varchar(255) NOT NULL,
@@ -124,7 +124,7 @@ CREATE TABLE Membro(
 CREATE TABLE Solicitacao_Filme(
     NOME varchar(255) NOT NULL,
     ANO integer NOT NULL,
-    ID_SOLICITACAO integer PRIMARY KEY,
+    ID_SOLICITACAO SERIAL PRIMARY KEY,
     DURACAO integer NOT NULL,
     GENERO varchar(255) NOT NULL,
     SINOPSE varchar(255) NOT NULL,

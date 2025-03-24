@@ -15,6 +15,7 @@ import { Avatar, AvatarImage } from '../ui/avatar';
 import { AvatarFallback } from '@radix-ui/react-avatar';
 import { FilmeEditModal } from './filme-edit-modal';
 import { useState } from 'react';
+import { useAuth } from '@/contexts/auth-context';
 
 interface fetchFilmeResponse {
     filme: {
@@ -51,17 +52,8 @@ interface fetchFilmeResponse {
     };
 }
 
-export function FilmeDetails({
-    user
-}: {
-    user: {
-        username: string;
-        email: string;
-        ID_USUARIO: number;
-        senha: string;
-        isAdmin: boolean;
-    };
-}) {
+export function FilmeDetails() {
+    const {user} = useAuth();
     const { id } = useParams();
     const router = useRouter();
     const { toast } = useToast();
@@ -131,7 +123,7 @@ export function FilmeDetails({
             `/api/filmes/reactions`,
             {
                 type: type,
-                username: user.username,
+                username: user?.username,
                 filmeId: Number(id),
                 active: active
             },
@@ -200,7 +192,7 @@ export function FilmeDetails({
             {
                 ...avaliacao,
                 ID_FILME: Number(id),
-                ID_USUARIO: user.ID_USUARIO
+                USERNAME: user?.username
             },
             {
                 headers: {
@@ -229,13 +221,13 @@ export function FilmeDetails({
 
     const handleSubmitAvaliacao = async (avaliacao: {
         ID_FILME: number;
-        ID_USUARIO: number;
+        USERNAME: string;
         NOTA: number;
         DESCRICAO: string;
     }) => {
         try {
             submitAvaliacao({
-                USERNAME: user.username,
+                USERNAME: user?.username || '',
                 NOTA: avaliacao.NOTA,
                 DESCRICAO: avaliacao.DESCRICAO
             });
@@ -449,7 +441,7 @@ export function FilmeDetails({
                                             filmeId={Number(id)}
                                             avaliacao={{
                                                 ID_FILME: Number(id),
-                                                ID_USUARIO: user.ID_USUARIO,
+                                                USERNAME: user?.username,
                                                 NOTA:
                                                     data?.userAvaliacion.NOTA ||
                                                     0,

@@ -1,5 +1,4 @@
 'use client';
-import { useState } from 'react';
 import {
     Card,
     CardContent,
@@ -16,33 +15,24 @@ import {
     TableHeader,
     TableRow
 } from '@/components/ui/table';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Check, X, Eye, Search } from 'lucide-react';
+import { Check, X, Eye } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 
-const fetchSolicitacoes = async (
-    status = 'all',
-    search = ''
-): Promise<{
-    ID_SOLICITACAO: number;
-    NOME: string;
-    ANO: number;
-    GENERO: string;
-    USERNAME: string;
-    STATUS: string;
-}[]> => {
-    const response = await axios.get(
-        `/api/admin/solicitacoes?status=${status}&search=${search}`
-    );
+const fetchSolicitacoes = async (): Promise<{
+    solicitacoes: {
+        id_solicitacao: number;
+        nome: string;
+        ano: number;
+        genero: string;
+        username: string;
+        STATUS: string;
+    }[];
+    total: number;
+}> => {
+    const response = await axios.get(`/api/solicitacoes`);
+    console.log(response.data);
     if (!response) {
         throw new Error('Failed to fetch solicitações');
     }
@@ -51,8 +41,6 @@ const fetchSolicitacoes = async (
 
 export default function SolicitacoesManagement() {
     const router = useRouter();
-    const [statusFilter, setStatusFilter] = useState('all');
-    const [searchTerm, setSearchTerm] = useState('');
 
     const {
         data: solicitacoes,
@@ -60,14 +48,9 @@ export default function SolicitacoesManagement() {
         error,
         refetch
     } = useQuery({
-        queryKey: ['solicitacoes', statusFilter, searchTerm],
-        queryFn: () => fetchSolicitacoes(statusFilter, searchTerm)
+        queryKey: ['solicitacoes'],
+        queryFn: () => fetchSolicitacoes()
     });
-
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        refetch();
-    };
 
     const handleApprove = async (id: number) => {
         try {
@@ -120,56 +103,6 @@ export default function SolicitacoesManagement() {
                 Gerenciamento de Solicitações
             </h1>
 
-            <Card className="mb-8">
-                <CardHeader>
-                    <CardTitle>Filtros e Busca</CardTitle>
-                    <CardDescription>
-                        Filtre e busque solicitações de filmes
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex flex-col md:flex-row gap-4">
-                        <div className="w-full md:w-1/3">
-                            <Select
-                                value={statusFilter}
-                                onValueChange={setStatusFilter}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Todos</SelectItem>
-                                    <SelectItem value="pending">
-                                        Pendentes
-                                    </SelectItem>
-                                    <SelectItem value="approved">
-                                        Aprovados
-                                    </SelectItem>
-                                    <SelectItem value="rejected">
-                                        Rejeitados
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <form
-                            onSubmit={handleSearch}
-                            className="flex flex-1 gap-2"
-                        >
-                            <Input
-                                placeholder="Buscar por título ou solicitante..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="flex-1"
-                            />
-                            <Button type="submit">
-                                <Search className="h-4 w-4 mr-2" />
-                                Buscar
-                            </Button>
-                        </form>
-                    </div>
-                </CardContent>
-            </Card>
-
             <Card>
                 <CardHeader>
                     <CardTitle>Solicitações de Filmes</CardTitle>
@@ -184,7 +117,7 @@ export default function SolicitacoesManagement() {
                             <TableRow>
                                 <TableHead>ID</TableHead>
                                 <TableHead>Título</TableHead>
-                                <TableHead>Ano</TableHead>
+                                <TableHead>ano</TableHead>
                                 <TableHead>Gênero</TableHead>
                                 <TableHead>Solicitante</TableHead>
                                 <TableHead>Status</TableHead>
@@ -192,21 +125,22 @@ export default function SolicitacoesManagement() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {solicitacoes && solicitacoes.length > 0 ? (
-                                solicitacoes.map((solicitacao) => (
-                                    <TableRow key={solicitacao.ID_SOLICITACAO}>
+                            {solicitacoes &&
+                            solicitacoes.solicitacoes.length > 0 ? (
+                                solicitacoes.solicitacoes.map((solicitacao) => (
+                                    <TableRow key={solicitacao.id_solicitacao}>
                                         <TableCell className="font-medium">
-                                            {solicitacao.ID_SOLICITACAO}
+                                            {solicitacao.id_solicitacao}
                                         </TableCell>
                                         <TableCell>
-                                            {solicitacao.NOME}
+                                            {solicitacao.nome}
                                         </TableCell>
-                                        <TableCell>{solicitacao.ANO}</TableCell>
+                                        <TableCell>{solicitacao.ano}</TableCell>
                                         <TableCell>
-                                            {solicitacao.GENERO}
+                                            {solicitacao.genero}
                                         </TableCell>
                                         <TableCell>
-                                            {solicitacao.USERNAME}
+                                            {solicitacao.username}
                                         </TableCell>
                                         <TableCell>
                                             <span
@@ -236,7 +170,7 @@ export default function SolicitacoesManagement() {
                                                     size="sm"
                                                     onClick={() =>
                                                         router.push(
-                                                            `/admin/solicitacoes/${solicitacao.ID_SOLICITACAO}`
+                                                            `/admin/solicitacao/${solicitacao.id_solicitacao}`
                                                         )
                                                     }
                                                 >
@@ -251,7 +185,7 @@ export default function SolicitacoesManagement() {
                                                             className="text-green-600 hover:text-green-800 hover:bg-green-100"
                                                             onClick={() =>
                                                                 handleApprove(
-                                                                    solicitacao.ID_SOLICITACAO
+                                                                    solicitacao.id_solicitacao
                                                                 )
                                                             }
                                                         >
@@ -263,7 +197,7 @@ export default function SolicitacoesManagement() {
                                                             className="text-red-600 hover:text-red-800 hover:bg-red-100"
                                                             onClick={() =>
                                                                 handleReject(
-                                                                    solicitacao.ID_SOLICITACAO
+                                                                    solicitacao.id_solicitacao
                                                                 )
                                                             }
                                                         >

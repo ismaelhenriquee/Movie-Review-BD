@@ -45,12 +45,12 @@ export function Navbar({ children }: { children: React.ReactNode }) {
                             <NavigationMenuItem>
                                 <NavigationMenuLink
                                     className="p-2"
-                                    href="/filmes"
+                                    href="/"
                                 >
                                     Filmes
                                 </NavigationMenuLink>
                             </NavigationMenuItem>
-                            {user && (
+                            {user && !user.isAdmin && (
                                 <>
                                     <NavigationMenuItem>
                                         <NavigationMenuTrigger>
@@ -58,14 +58,6 @@ export function Navbar({ children }: { children: React.ReactNode }) {
                                         </NavigationMenuTrigger>
                                         <NavigationMenuContent>
                                             <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] ">
-                                                <li>
-                                                    <NavigationMenuLink
-                                                        className="block p-2 hover:bg-gray-100 rounded"
-                                                        href="/user/perfil"
-                                                    >
-                                                        Perfil
-                                                    </NavigationMenuLink>
-                                                </li>
                                                 <NavigationMenuLink
                                                     className="block p-2 hover:bg-gray-100 rounded"
                                                     href="/user/historico"
@@ -91,31 +83,12 @@ export function Navbar({ children }: { children: React.ReactNode }) {
                             )}
                             {user?.isAdmin && (
                                 <NavigationMenuItem>
-                                    <NavigationMenuTrigger>
-                                        Admin
-                                    </NavigationMenuTrigger>
-                                    <NavigationMenuContent>
-                                        <div className="w-48 p-2">
-                                            <NavigationMenuLink
-                                                className="block p-2 hover:bg-gray-100 rounded"
-                                                href="/admin/dashboard"
-                                            >
-                                                Dashboard
-                                            </NavigationMenuLink>
-                                            <NavigationMenuLink
-                                                className="block p-2 hover:bg-gray-100 rounded"
-                                                href="/admin/solicitacoes"
-                                            >
-                                                Solicitações
-                                            </NavigationMenuLink>
-                                            <NavigationMenuLink
-                                                className="block p-2 hover:bg-gray-100 rounded"
-                                                href="/admin/membros"
-                                            >
-                                                Membros
-                                            </NavigationMenuLink>
-                                        </div>
-                                    </NavigationMenuContent>
+                                    <NavigationMenuLink
+                                        className="block p-2 hover:bg-gray-100 rounded"
+                                        href="/admin"
+                                    >
+                                        Dashboard
+                                    </NavigationMenuLink>
                                 </NavigationMenuItem>
                             )}
                         </NavigationMenuList>

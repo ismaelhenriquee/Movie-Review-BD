@@ -45,7 +45,6 @@ export async function POST(req: NextRequest) {
             { status: 405 }
         );
     }
-
     try {
         const {
             NOME,
@@ -106,7 +105,7 @@ export async function POST(req: NextRequest) {
             ]
         );
 
-        const idSolicitacao = result.rows[0].ID_SOLICITACAO;
+        const idSolicitacao = result.rows[0].id_solicitacao;
 
         await pool.query(
             `INSERT INTO Solicita (ID_SOLICITACAO, USERNAME) VALUES ($1, $2)`,

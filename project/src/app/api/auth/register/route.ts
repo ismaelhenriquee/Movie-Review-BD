@@ -81,6 +81,7 @@ export async function POST(req: Request) {
                 const insertPublicQuery =
                     'INSERT INTO U_Publico(USERNAME) VALUES($1)';
                 await client.query(insertPublicQuery, [username]);
+                console.log('Usuário registrado como público com sucesso');
             }
 
             await client.query('COMMIT');

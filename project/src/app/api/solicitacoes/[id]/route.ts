@@ -85,17 +85,16 @@ export async function POST(
             const filmeResult = await pool.query(
                 'INSERT INTO Filme(NOME, ANO, DURACAO, GENERO, SINOPSE, DIRETOR, IDIOMA) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING ID_FILME',
                 [
-                    solicitacaoResult.rows[0].NOME,
-                    solicitacaoResult.rows[0].ANO,
-                    solicitacaoResult.rows[0].DURACAO,
-                    solicitacaoResult.rows[0].GENERO,
-                    solicitacaoResult.rows[0].SINOPSE,
-                    solicitacaoResult.rows[0].DIRETOR,
-                    solicitacaoResult.rows[0].IDIOMA
+                    solicitacaoResult.rows[0].nome,
+                    solicitacaoResult.rows[0].ano,
+                    solicitacaoResult.rows[0].duracao,
+                    solicitacaoResult.rows[0].genero,
+                    solicitacaoResult.rows[0].sinopse,
+                    solicitacaoResult.rows[0].diretor,
+                    solicitacaoResult.rows[0].idioma
                 ]
             );
-
-            const filmId = filmeResult.rows[0].ID_FILME;
+            const filmId = filmeResult.rows[0].id_filme;
 
             const tagsResult = await pool.query(
                 'SELECT TAG FROM Tags_Solicitacao WHERE ID_SOLICITACAO = $1',

@@ -77,59 +77,7 @@ export function FilmeGrid() {
 
     const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['filmes', searchTerm],
-        queryFn: getMovies,
-        initialData: {
-            data: [
-                {
-                    ID_FILME: 1,
-                    NOME: 'Exemplo de Filme',
-                    ANO: 2023,
-                    GENERO: 'Ação',
-                    NOTA_AGREGADA: 8.5,
-                    IDIOMA: 'Inglês',
-                    DIRETOR: 'John Doe',
-                    DURACAO: 120,
-                    SINOPSE: 'Sinopse do filme',
-                    IsWatched: false,
-                    IsFavorite: false,
-                    IsWatchlist: false,
-                    Tags: [{ TAG: 'Tag1' }, { TAG: 'Tag2' }],
-                    IMAGEM: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSktqj-xOwVJNFfDLnVyBaO1m-1N4CkmpvYaw&s'
-                },
-                {
-                    ID_FILME: 2,
-                    IMAGEM: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSktqj-xOwVJNFfDLnVyBaO1m-1N4CkmpvYaw&s',
-                    NOME: 'Outro Filme',
-                    ANO: 2022,
-                    GENERO: 'Comédia',
-                    NOTA_AGREGADA: 7.0,
-                    IDIOMA: 'Português',
-                    DIRETOR: 'Jane Doe',
-                    DURACAO: 90,
-                    IsWatched: false,
-                    IsFavorite: false,
-                    IsWatchlist: true,
-                    SINOPSE: 'Outra sinopse do filme',
-                    Tags: [{ TAG: 'Tag3' }, { TAG: 'Tag4' }]
-                },
-                {
-                    ID_FILME: 3,
-                    IMAGEM: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSktqj-xOwVJNFfDLnVyBaO1m-1N4CkmpvYaw&s',
-                    NOME: 'Filme de Exemplo',
-                    ANO: 2021,
-                    GENERO: 'Drama',
-                    NOTA_AGREGADA: 9.0,
-                    IDIOMA: 'Espanhol',
-                    DIRETOR: 'Alice Smith',
-                    DURACAO: 150,
-                    IsWatched: true,
-                    IsFavorite: false,
-                    IsWatchlist: true,
-                    SINOPSE: 'Mais uma sinopse do filme',
-                    Tags: [{ TAG: 'Tag5' }, { TAG: 'Tag6' }]
-                }
-            ]
-        }
+        queryFn: getMovies
     });
 
     if (isError) {
@@ -368,12 +316,14 @@ export function FilmeGrid() {
                         </div>
                     </SheetContent>
                 </Sheet>
-                <Button
-                    variant="outline"
-                    onClick={() => setOpen(true)}
-                >
-                    Solicitar Filme
-                </Button>
+                {!user?.isAdmin && (
+                    <Button
+                        variant="outline"
+                        onClick={() => setOpen(true)}
+                    >
+                        Solicitar Filme
+                    </Button>
+                )}
             </div>
 
             {isLoading ? (
@@ -396,7 +346,7 @@ export function FilmeGrid() {
                         Tentar novamente
                     </Button>
                 </div>
-            ) : data.data.length === 0 ? (
+            ) : data?.data.length === 0 ? (
                 <div className="text-center p-8">
                     <p className="text-gray-500 mb-4">
                         Nenhum filme encontrado.
@@ -411,7 +361,7 @@ export function FilmeGrid() {
             ) : (
                 <>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                        {data.data.map((filme) => (
+                        {data?.data.map((filme) => (
                             <FilmeCard
                                 key={filme.ID_FILME}
                                 filme={filme}

@@ -26,7 +26,7 @@ const fetchDashboardStats = async (): Promise<{
     totalAvaliacoes: number;
     totalSolicitacoes: number;
 }> => {
-    const response = await axios.get('/api/admin/dashboard');
+    const response = await axios.get('/api/dashboard');
     if (!response) {
         throw new Error('Failed to fetch dashboard stats');
     }
@@ -42,7 +42,7 @@ const fetchRecentRequests = async (): Promise<
         USERNAME: string;
     }[]
 > => {
-    const response = await axios.get('/api/admin/solicitacoes/recentes');
+    const response = await axios.get('/api/solicitacoes');
     if (!response) {
         throw new Error('Failed to fetch recent requests');
     }
@@ -269,7 +269,7 @@ export function AdminDashboard() {
                                 variant="outline"
                                 className="w-full justify-start"
                                 onClick={() =>
-                                    router.push('/admin/solicitacoes')
+                                    router.push('/admin/solicitacao')
                                 }
                             >
                                 <FileText className="mr-2 h-4 w-4" />
@@ -290,14 +290,6 @@ export function AdminDashboard() {
                             >
                                 <Users className="mr-2 h-4 w-4" />
                                 Gerenciar Usuários
-                            </Button>
-                            <Button
-                                variant="outline"
-                                className="w-full justify-start"
-                                onClick={() => router.push('/admin/avaliacoes')}
-                            >
-                                <Star className="mr-2 h-4 w-4" />
-                                Estatísticas de Filmes
                             </Button>
                         </div>
                     </CardContent>
