@@ -1,6 +1,6 @@
      CREATE TABLE Pessoa(
     USERNAME varchar(255) PRIMARY KEY,
-    EMAIL varchar(255) NOT NULL,
+    EMAIL varchar(255) NOT NULL UNIQUE,
     SENHA varchar(255) NOT NULL
 );
 
@@ -42,19 +42,18 @@ CREATE TABLE Avaliacao(
     PRIMARY KEY(ID_FILME, USERNAME)
 );
 
--- TODO: Trigger pra data atual quando dá insert na Avaliacao?
-
+-- Função para atualizar a média da nota agregada
 CREATE OR REPLACE FUNCTION update_nota_agregada_function()
 RETURNS TRIGGER AS $$
 DECLARE
     avg_rating DECIMAL(3,1);
 BEGIN
-    -- Calculate the average rating for the movie
+    -- Calcular a média das notas para o filme
     SELECT AVG(NOTA) INTO avg_rating
     FROM Avaliacao
     WHERE ID_FILME = COALESCE(NEW.ID_FILME, OLD.ID_FILME);
     
-    -- Update the nota_agregada column in the Filme table
+    -- Atualizar a coluna nota_agregada na tabela Filme
     UPDATE Filme
     SET NOTA_AGREGADA = COALESCE(avg_rating, 0)
     WHERE ID_FILME = COALESCE(NEW.ID_FILME, OLD.ID_FILME);
