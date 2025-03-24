@@ -8,7 +8,7 @@ Este repositório contém:
 
 - **Estrutura do Banco de Dados**: As tabelas necessárias para armazenar informações sobre filmes, usuários, avaliações e interações.
 - **Script de População de Dados**: Scripts SQL para povoar o banco de dados com dados de filmes e usuários para testar e utilizar o sistema.
-- **Scripts Python**: Funções de integração com o banco de dados e manipulação dos dados armazenados.
+- **querys**: Funções de integração com o banco de dados e manipulação dos dados armazenados.
 - **Esquema Físico**: Descrição do modelo físico do banco de dados, representando as relações entre as tabelas e seus atributos.
 
 ## Estrutura do Projeto
