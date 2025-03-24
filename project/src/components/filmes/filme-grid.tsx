@@ -22,17 +22,12 @@ import {
 } from '@/components/ui/sheet';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/auth-context';
+import { FilmeEditModal } from './filme-edit-modal';
 
-export function FilmeGrid({
-    user
-}: {
-    user: {
-        username: string;
-        email: string;
-        ID_USUARIO: number;
-        senha: string;
-    };
-}) {
+export function FilmeGrid() {
+    const { user } = useAuth();
+
     async function getMovies(): Promise<{
         data: {
             NOME: string;
@@ -60,12 +55,17 @@ export function FilmeGrid({
                 notaMin: filters.notaMin,
                 idioma: filters.idioma,
                 diretor: filters.diretor
+            },
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`
             }
         });
         return data;
     }
 
     const [searchTerm, setSearchTerm] = useState('');
+    const [open, setOpen] = useState(false);
+
     const [filters, setFilters] = useState({
         genero: '',
         anoMin: '',
@@ -368,6 +368,12 @@ export function FilmeGrid({
                         </div>
                     </SheetContent>
                 </Sheet>
+                <Button
+                    variant="outline"
+                    onClick={() => setOpen(true)}
+                >
+                    Solicitar Filme
+                </Button>
             </div>
 
             {isLoading ? (
@@ -393,7 +399,7 @@ export function FilmeGrid({
             ) : data.data.length === 0 ? (
                 <div className="text-center p-8">
                     <p className="text-gray-500 mb-4">
-                        Nenhum filme encontrado para os filtros selecionados.
+                        Nenhum filme encontrado.
                     </p>
                     <Button
                         variant="outline"
@@ -410,12 +416,20 @@ export function FilmeGrid({
                                 key={filme.ID_FILME}
                                 filme={filme}
                                 refetch={refetch}
-                                user={user}
+                                user={{
+                                    email: user?.email,
+                                    username: user?.username,
+                                    isAdmin: user?.isAdmin
+                                }}
                             />
                         ))}
                     </div>
                 </>
             )}
+            <FilmeEditModal
+                open={open}
+                onOpenChange={setOpen}
+            />
         </div>
     );
 }

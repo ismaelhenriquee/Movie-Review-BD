@@ -1,15 +1,25 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { getUserFromToken } from '@/lib/auth';
 
-export async function GET(req: NextApiRequest, res: NextApiResponse) {
+export async function GET(req: NextRequest) {
     if (req.method !== 'GET') {
-        return res.status(405).json({ message: 'Method not allowed' });
+        return NextResponse.json(
+            { message: 'Method not allowed' },
+            { status: 405 }
+        );
     }
 
     try {
-        const { search, genero, anoMin, anoMax, notaMin, idioma, diretor } =
-            req.query;
+        const searchParams = req.nextUrl.searchParams;
+        const search = searchParams.get('search');
+        const genero = searchParams.get('genero');
+        const anoMin = searchParams.get('anoMin');
+        const anoMax = searchParams.get('anoMax');
+        const notaMin = searchParams.get('notaMin');
+        const idioma = searchParams.get('idioma');
+        const diretor = searchParams.get('diretor');
+        const queryUserName = searchParams.get('userName');
 
         let query = `
       SELECT 
@@ -77,13 +87,15 @@ export async function GET(req: NextApiRequest, res: NextApiResponse) {
                     [film.ID_FILME]
                 );
 
-                 const userName =
-                     req.query.userName ||
-                     (req.headers.authorization
-                         ? getUserFromToken(
-                               req.headers.authorization.split(' ')[1]
-                           )?.username
-                         : null);
+                const userName =
+                    queryUserName ||
+                    (req.headers.get('authorization')
+                        ? getUserFromToken(
+                              (req.headers.get('authorization') || '').split(
+                                  ' '
+                              )[1]
+                          )?.username
+                        : null);
 
                 let isWatched = false;
                 let isFavorite = false;
@@ -94,19 +106,19 @@ export async function GET(req: NextApiRequest, res: NextApiResponse) {
                         'SELECT 1 FROM Assistiu WHERE ID_FILME = $1 AND USERNAME = $2',
                         [film.ID_FILME, userName]
                     );
-                    isWatched = (watchedResult.rowCount||0) > 0;
+                    isWatched = (watchedResult.rowCount || 0) > 0;
 
                     const favoriteResult = await pool.query(
                         'SELECT 1 FROM Favoritou WHERE ID_FILME = $1 AND USERNAME = $2',
                         [film.ID_FILME, userName]
                     );
-                    isFavorite = (favoriteResult.rowCount||0) > 0;
+                    isFavorite = (favoriteResult.rowCount || 0) > 0;
 
                     const watchlistResult = await pool.query(
                         'SELECT 1 FROM Assistira WHERE ID_FILME = $1 AND USERNAME = $2',
                         [film.ID_FILME, userName]
                     );
-                    isWatchlist = (watchlistResult.rowCount||0) > 0;
+                    isWatchlist = (watchlistResult.rowCount || 0) > 0;
                 }
 
                 return {
@@ -119,11 +131,135 @@ export async function GET(req: NextApiRequest, res: NextApiResponse) {
             })
         );
 
-        return res.status(200).json({ data: filmsWithTags });
+        return NextResponse.json({ data: filmsWithTags }, { status: 200 });
     } catch (error) {
         console.error('Error fetching films:', error);
-        return res
-            .status(500)
-            .json({ message: 'Internal server error', error: String(error) });
+        return NextResponse.json(
+            {
+                message: 'Internal server error',
+                error: String(error)
+            },
+            { status: 500 }
+        );
+    }
+}
+export async function POST(req: NextRequest) {
+    if (req.method !== 'POST') {
+        return NextResponse.json(
+            { message: 'Method not allowed' },
+            { status: 405 }
+        );
+    }
+
+    try {
+        const {
+            NOME,
+            ANO,
+            DURACAO,
+            GENERO,
+            SINOPSE,
+            DIRETOR,
+            IDIOMA,
+            IMAGEM,
+            TAGS,
+            USERNAME
+        } = await req.json();
+
+        if (
+            !NOME ||
+            !ANO ||
+            !DURACAO ||
+            !GENERO ||
+            !SINOPSE ||
+            !DIRETOR ||
+            !IDIOMA
+        ) {
+            return NextResponse.json(
+                { message: 'Dados obrigatórios faltando' },
+                { status: 400 }
+            );
+        }
+
+        const userToken = req.headers.get('authorization')?.split(' ')[1];
+        const tokenUsername = userToken
+            ? getUserFromToken(userToken)?.username
+            : null;
+        const finalUsername = USERNAME || tokenUsername;
+
+        if (finalUsername) {
+            const adminCheck = await pool.query(
+                'SELECT 1 FROM U_Admin WHERE USERNAME = $1',
+                [finalUsername]
+            );
+
+            if (adminCheck.rowCount === 0) {
+                return NextResponse.json(
+                    {
+                        message:
+                            'Apenas administradores podem criar filmes diretamente'
+                    },
+                    { status: 403 }
+                );
+            }
+        } else {
+            return NextResponse.json(
+                { message: 'Usuário não autenticado' },
+                { status: 401 }
+            );
+        }
+
+        await pool.query('BEGIN');
+
+        const idResult = await pool.query(
+            'SELECT MAX(ID_FILME) + 1 as next_id FROM Filme'
+        );
+        const nextId = idResult.rows[0].next_id || 1;
+
+        const result = await pool.query(
+            `INSERT INTO Filme (ID_FILME, NOME, ANO, DURACAO, GENERO, SINOPSE, DIRETOR, IDIOMA, IMAGEM)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING ID_FILME`,
+            [
+                nextId,
+                NOME,
+                ANO,
+                DURACAO,
+                GENERO,
+                SINOPSE,
+                DIRETOR,
+                IDIOMA,
+                IMAGEM || 'https://placeholder.com/movie'
+            ]
+        );
+
+        const idFilme = result.rows[0].ID_FILME;
+
+        if (TAGS && Array.isArray(TAGS) && TAGS.length > 0) {
+            for (const tag of TAGS) {
+                await pool.query(
+                    `INSERT INTO Tags (ID_FILME, TAG) VALUES ($1, $2)`,
+                    [idFilme, tag]
+                );
+            }
+        }
+
+        await pool.query('COMMIT');
+
+        return NextResponse.json(
+            {
+                message: 'Filme criado com sucesso',
+                idFilme
+            },
+            { status: 201 }
+        );
+    } catch (error) {
+        await pool.query('ROLLBACK');
+        console.error('Erro ao criar filme:', error);
+        return NextResponse.json(
+            {
+                message: 'Erro ao criar filme',
+                error: String(error)
+            },
+            { status: 500 }
+        );
     }
 }

@@ -26,6 +26,7 @@ import { useMutation } from '@tanstack/react-query';
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
 import { X } from 'lucide-react';
+import { useAuth } from '@/contexts/auth-context';
 
 interface FilmeFormData {
     NOME: string;
@@ -85,6 +86,7 @@ export function FilmeEditModal({
     const [novaTag, setNovaTag] = useState('');
     const [tags, setTags] = useState<string[]>([]);
     const isEditing = !!filmeId;
+    const { user } = useAuth();
 
     const {
         register,
@@ -157,11 +159,19 @@ export function FilmeEditModal({
                 }
             });
         } else {
-            await axios.post('/api/filmes', filmeData, {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`
-                }
-            });
+            if (user?.isAdmin) {
+                await axios.post('/api/filmes', filmeData, {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+            } else {
+                await axios.post('/api/solicitacoes', {...filmeData ,USERNAME:user?.username}, {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+            }
         }
     };
 
@@ -169,7 +179,7 @@ export function FilmeEditModal({
         mutationFn: saveFilme,
         onSuccess: () => {
             toast({
-                description: `Filme ${isEditing ? 'atualizado' : 'criado'} com sucesso!`,
+                description: `Filme ${isEditing ? 'atualizado' : user?.isAdmin ? 'criado' : 'solicitado'} com sucesso!`,
                 variant: 'default'
             });
             onSuccess?.();

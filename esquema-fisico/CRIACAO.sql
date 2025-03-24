@@ -1,4 +1,4 @@
-CREATE TABLE Pessoa(
+     CREATE TABLE Pessoa(
     USERNAME varchar(255) PRIMARY KEY,
     EMAIL varchar(255) NOT NULL,
     SENHA varchar(255) NOT NULL
@@ -21,6 +21,7 @@ CREATE TABLE Filme(
     DURACAO integer NOT NULL,
     GENERO varchar(255) NOT NULL,
     SINOPSE varchar(255) NOT NULL,
+    IMAGEM varchar(255) NOT NULL,
     DIRETOR varchar(255) NOT NULL,
     IDIOMA varchar(255) NOT NULL,
     NOTA_AGREGADA numeric(3,1) DEFAULT 0.0 CHECK (NOTA_AGREGADA>=0 AND NOTA_AGREGADA <=10) 
@@ -37,7 +38,7 @@ CREATE TABLE Avaliacao(
     USERNAME varchar(255) REFERENCES U_Publico(USERNAME),
     NOTA numeric(3,1) NOT NULL CHECK (NOTA>=0 AND NOTA<=10),
     DESCRICAO varchar(4096) DEFAULT '',
-    DATA_REVIEW date DEFAULT CURRENT_DATE ON UPDATE CURRENT_DATE, -- Nao deve necessitar trigger
+    DATA_REVIEW date DEFAULT CURRENT_DATE,
     PRIMARY KEY(ID_FILME, USERNAME)
 );
 
@@ -91,12 +92,13 @@ CREATE TABLE Solicitacao_Filme(
     DURACAO integer NOT NULL,
     GENERO varchar(255) NOT NULL,
     SINOPSE varchar(255) NOT NULL,
+    IMAGEM varchar(255) NOT NULL,
     DIRETOR varchar(255) NOT NULL,
     IDIOMA varchar(255) NOT NULL
 );
 
 CREATE TABLE Tags_Solicitacao(
-    ID_SOLICITACAO integer references Solicitacao_Filme (ID_SOLICITACAO)
+    ID_SOLICITACAO integer REFERENCES Solicitacao_Filme(ID_SOLICITACAO),
     TAG varchar(255) NOT NULL,
     PRIMARY KEY(ID_SOLICITACAO, TAG)
 );

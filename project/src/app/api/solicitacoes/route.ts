@@ -1,3 +1,4 @@
+import { getUserFromToken } from '@/lib/auth';
 import { pool } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -45,32 +46,83 @@ export async function POST(req: NextRequest) {
         );
     }
 
-    const { NOME, ANO, DURACAO, GENERO, SINOPSE, DIRETOR, IDIOMA } =
-        await req.json();
-
-    if (
-        !NOME ||
-        !ANO ||
-        !DURACAO ||
-        !GENERO ||
-        !SINOPSE ||
-        !DIRETOR ||
-        !IDIOMA
-    ) {
-        return NextResponse.json(
-            { message: 'Dados faltando na solicitação de filme' },
-            { status: 400 }
-        );
-    }
-
     try {
+        const {
+            NOME,
+            ANO,
+            DURACAO,
+            GENERO,
+            SINOPSE,
+            DIRETOR,
+            IDIOMA,
+            IMAGEM,
+            USERNAME,
+            TAGS
+        } = await req.json();
+
+        if (
+            !NOME ||
+            !ANO ||
+            !DURACAO ||
+            !GENERO ||
+            !SINOPSE ||
+            !DIRETOR ||
+            !IDIOMA ||
+            !USERNAME
+        ) {
+            return NextResponse.json(
+                { message: 'Dados faltando na solicitação de filme' },
+                { status: 400 }
+            );
+        }
+
+        const userToken = req.headers.get('authorization')?.split(' ')[1];
+        const tokenUsername = userToken
+            ? getUserFromToken(userToken)?.username
+            : null;
+        const finalUsername = USERNAME || tokenUsername;
+
+        if (!finalUsername) {
+            return NextResponse.json(
+                { message: 'Usuário não autenticado' },
+                { status: 401 }
+            );
+        }
+
+        await pool.query('BEGIN');
+
         const result = await pool.query(
-            `INSERT INTO Solicitacao_Filme (NOME, ANO, DURACAO, GENERO, SINOPSE, DIRETOR, IDIOMA)
-             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING ID_SOLICITACAO`,
-            [NOME, ANO, DURACAO, GENERO, SINOPSE, DIRETOR, IDIOMA]
+            `INSERT INTO Solicitacao_Filme (NOME, ANO, DURACAO, GENERO, SINOPSE, DIRETOR, IDIOMA, IMAGEM)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING ID_SOLICITACAO`,
+            [
+                NOME,
+                ANO,
+                DURACAO,
+                GENERO,
+                SINOPSE,
+                DIRETOR,
+                IDIOMA,
+                IMAGEM || 'https://placeholder.com/movie'
+            ]
         );
 
         const idSolicitacao = result.rows[0].ID_SOLICITACAO;
+
+        await pool.query(
+            `INSERT INTO Solicita (ID_SOLICITACAO, USERNAME) VALUES ($1, $2)`,
+            [idSolicitacao, finalUsername]
+        );
+
+        if (TAGS && Array.isArray(TAGS) && TAGS.length > 0) {
+            for (const tag of TAGS) {
+                await pool.query(
+                    `INSERT INTO Tags_Solicitacao (ID_SOLICITACAO, TAG) VALUES ($1, $2)`,
+                    [idSolicitacao, tag]
+                );
+            }
+        }
+
+        await pool.query('COMMIT');
 
         return NextResponse.json(
             {
@@ -80,6 +132,7 @@ export async function POST(req: NextRequest) {
             { status: 201 }
         );
     } catch (error) {
+        await pool.query('ROLLBACK');
         console.error('Erro ao criar solicitação de filme:', error);
         return NextResponse.json(
             {

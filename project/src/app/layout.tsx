@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { Navbar } from '@/components/navbar';
 import { QueryClientProvider } from '@tanstack/react-query';
 import queryClient from '@/lib/react.quey';
+import { AuthProvider } from '@/contexts/auth-context';
 
 export const metadata: Metadata = {
     title: 'Create Next App',
@@ -17,24 +18,14 @@ export default function RootLayout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
-  
     return (
         <html lang="pt-br">
             <body className={`${inter.className}`}>
                 <QueryClientProvider client={queryClient}>
-                    <Navbar
-                        user={{
-                            username: 'Lucas',
-                            email: 'jj@gmail.com',
-                            ID_USUARIO: 1,
-                            senha: '123456'
-                        }}
-                        isAdmin={true}
-
-                    >
-                    {children}
-                    </Navbar>
-                    <Toaster />
+                    <AuthProvider>
+                        <Navbar>{children}</Navbar>
+                        <Toaster />
+                    </AuthProvider>
                 </QueryClientProvider>
             </body>
         </html>

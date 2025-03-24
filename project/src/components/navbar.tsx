@@ -19,21 +19,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/contexts/auth-context';
 
-export function Navbar({
-    user,
-    isAdmin,
-    children
-}: {
-    children: React.ReactNode;
-    user: {
-        username: string;
-        email: string;
-        ID_USUARIO: number;
-        senha: string;
-    };
-    isAdmin: boolean;
-}) {
+export function Navbar({ children }: { children: React.ReactNode }) {
+    const { user, logout } = useAuth();
     const pathname = usePathname();
 
     if (pathname.startsWith('/auth')) {
@@ -100,7 +89,7 @@ export function Navbar({
                                     </NavigationMenuItem>
                                 </>
                             )}
-                            {isAdmin && (
+                            {user?.isAdmin && (
                                 <NavigationMenuItem>
                                     <NavigationMenuTrigger>
                                         Admin
@@ -176,7 +165,9 @@ export function Navbar({
                                     </DropdownMenuItem>
 
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem>Sair</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={logout}>
+                                        Sair
+                                    </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         ) : (

@@ -41,10 +41,9 @@ export function FilmeCard({
         IsWatchlist: boolean;
     };
     user: {
-        username: string;
-        email: string;
-        ID_USUARIO: number;
-        senha: string;
+        username?: string;
+        email?: string;
+        isAdmin?: boolean;
     };
     refetch?: () => void;
 }) {

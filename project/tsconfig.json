@@ -10,6 +10,7 @@
         "moduleResolution": "bundler",
         "resolveJsonModule": true,
         "isolatedModules": true,
+        "target": "ESNext",
         "jsx": "preserve",
         "incremental": true,
         "plugins": [
@@ -21,6 +22,6 @@
             "@/*": ["./src/*"]
         }
     },
-    "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+    "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/api/scripts/init-db.mts"],
     "exclude": ["node_modules"]
 }
